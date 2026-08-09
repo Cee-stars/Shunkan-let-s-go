@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>瞬間英作文</title>
+<meta name="theme-color" content="#FBFBFD" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101216" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="./manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="瞬間英作文">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" href="./icon-192.png">
+<style>
+/* ============ tokens ============ */
+:root{
+  --bg:#FBFBFD; --surface:#FFFFFF; --surface-2:#F2F3F6;
+  --ink:#16181D; --ink-2:#5C6270; --ink-3:#9AA0AC;
+  --line:#E4E6EB; --line-2:#D3D7DE;
+  --subj:#E0334B;   /* 主語=赤 */
+  --verb:#1B62D6;   /* 動詞=青 */
+  --gold:#E08A16;   /* バッジ */
+  --done:#12946B;
+  --shadow:0 1px 2px rgba(20,24,32,.05), 0 8px 24px rgba(20,24,32,.06);
+  --r:14px;
+  --jp:"Hiragino Kaku Gothic ProN","Hiragino Sans","Yu Gothic Medium","Yu Gothic",system-ui,sans-serif;
+  --en:-apple-system,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#101216; --surface:#191C22; --surface-2:#22262E;
+    --ink:#EDEFF3; --ink-2:#A6ADBA; --ink-3:#767D8A;
+    --line:#2A2E37; --line-2:#3A404B;
+    --subj:#FF6B7E; --verb:#6FA8FF; --gold:#F0B24B; --done:#3FD4A1;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-family:var(--jp);
+  font-size:16px; line-height:1.6; -webkit-text-size-adjust:100%;
+  overscroll-behavior-y:none;
+}
+button,input,textarea,select{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer;padding:0}
+:focus-visible{outline:2px solid var(--verb);outline-offset:2px;border-radius:6px}
+.wrap{max-width:820px;margin:0 auto;padding:0 16px}
+
+/* ============ header ============ */
+header{
+  position:sticky;top:0;z-index:30;background:var(--bg);background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--line);
+  padding-top:env(safe-area-inset-top,0px);
+}
+.hbar{display:flex;align-items:center;gap:12px;height:54px}
+.brand{display:flex;align-items:baseline;gap:8px;font-weight:700;letter-spacing:.02em}
+.brand .bolt{color:var(--gold);font-size:18px;transform:translateY(1px)}
+.brand h1{font-size:17px;margin:0;font-weight:700}
+.spacer{flex:1}
+.icon-btn{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;color:var(--ink-2);font-size:17px}
+.icon-btn:hover{background:var(--surface-2);color:var(--ink)}
+
+/* stats strip */
+.stats{display:flex;gap:0;border-top:1px solid var(--line);}
+.stat{flex:1;padding:8px 4px 10px;text-align:center;border-right:1px solid var(--line)}
+.stat:last-child{border-right:0}
+.stat b{display:block;font-family:var(--mono);font-size:19px;font-weight:600;line-height:1.2;letter-spacing:-.02em}
+.stat span{font-size:10px;color:var(--ink-3);letter-spacing:.12em}
+.stat.fire b{color:var(--gold)}
+.stat.today b{color:var(--done)}
+
+/* tabs */
+nav.tabs{display:flex;gap:4px;padding:8px 0 10px}
+.tab{flex:1;padding:9px 0;border-radius:10px;text-align:center;font-size:14px;font-weight:600;color:var(--ink-2)}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+
+/* ============ toolbar ============ */
+.toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:4px 0 12px}
+.search{flex:1;min-width:150px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:8px 11px}
+.search input{border:0;background:none;width:100%;outline:none;font-size:15px}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{white-space:nowrap;padding:6px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--ink-2)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.chip .n{font-family:var(--mono);opacity:.65;margin-left:5px;font-size:12px}
+select.mini{background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:8px 9px;font-size:13px;color:var(--ink-2)}
+
+/* ============ card ============ */
+.list{display:flex;flex-direction:column;gap:10px;padding-bottom:120px}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);box-shadow:var(--shadow);padding:13px 14px 11px;position:relative}
+.card.due{border-left:3px solid var(--gold)}
+.card.new{border-left:3px solid var(--line-2)}
+.pair{display:flex;flex-direction:column;gap:7px}
+.list.side .pair{flex-direction:row;align-items:flex-start;gap:14px}
+.list.side .jp,.list.side .en{flex:1;min-width:0}
+.jp{font-size:16px;font-weight:600;letter-spacing:.01em;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+.en{font-family:var(--en);font-size:16.5px;line-height:1.5;letter-spacing:.005em;white-space:pre-wrap;word-break:break-word;color:var(--ink)}
+.list.side .en{border-left:2px solid var(--line);padding-left:12px}
+.list.stack .en{padding-left:11px;border-left:2px solid var(--line)}
+.en:empty::before{content:"英文が未入力";color:var(--ink-3);font-size:14px}
+.masked .en{filter:blur(7px);opacity:.55;cursor:pointer;user-select:none}
+
+.meta{display:flex;align-items:center;gap:8px;margin-top:11px;padding-top:9px;border-top:1px solid var(--line);flex-wrap:wrap}
+.badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:11.5px;font-weight:600;letter-spacing:.04em;padding:3px 8px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.badge.lv1{color:var(--done)} .badge.lv2{color:var(--gold)} .badge.lv3{color:var(--verb)}
+.badge.lv4{color:var(--subj)} .badge.lv5{background:linear-gradient(90deg,var(--gold),var(--subj));color:#fff}
+.last{font-size:12px;color:var(--ink-3);font-family:var(--mono);letter-spacing:.02em}
+.last.hot{color:var(--done)}
+.last.due{color:var(--gold)}
+.tag{font-size:11.5px;color:var(--ink-2);background:var(--surface-2);border-radius:6px;padding:2px 7px}
+.card-actions{margin-left:auto;display:flex;gap:6px;align-items:center}
+.did{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:36px;padding:7px 14px;border-radius:999px;background:var(--ink);color:var(--bg);font-size:13px;font-weight:700}
+.did.done{background:var(--surface-2);color:var(--done)}
+.did:active{transform:scale(.96)}
+.more{width:34px;height:34px;border-radius:8px;color:var(--ink-3);display:grid;place-items:center;font-size:16px}
+.more:hover{background:var(--surface-2);color:var(--ink)}
+.dots{display:flex;gap:3px;align-items:center;margin-left:2px}
+.dot{width:6px;height:6px;border-radius:2px;background:var(--line-2)}
+.dot.on{background:var(--done)}
+
+@keyframes flash{0%{box-shadow:0 0 0 0 var(--done)}100%{box-shadow:0 0 0 14px transparent}}
+.card.flash{animation:flash .45s ease-out}
+@media (prefers-reduced-motion:reduce){.card.flash{animation:none}}
+
+/* empty */
+.empty{text-align:center;padding:60px 20px;color:var(--ink-3)}
+.empty .big{font-size:34px;margin-bottom:10px}
+.empty b{display:block;color:var(--ink-2);font-size:15px;margin-bottom:6px}
+
+/* ============ fab ============ */
+.fab{position:fixed;right:calc(16px + env(safe-area-inset-right,0px));bottom:calc(18px + var(--safe-b));z-index:25;
+  height:52px;padding:0 20px;border-radius:999px;background:var(--ink);color:var(--bg);font-weight:700;font-size:15px;
+  box-shadow:0 6px 20px rgba(0,0,0,.22);display:flex;align-items:center;gap:8px;
+  transition:transform .2s cubic-bezier(.32,.72,0,1),opacity .2s}
+.fab:active{transform:scale(.97)}
+.fab.tuck{transform:translateY(150%);opacity:0;pointer-events:none}
+@media (prefers-reduced-motion:reduce){.fab{transition:none}}
+
+/* ============ sheet / modal ============ */
+.scrim{position:fixed;inset:0;background:rgba(10,12,16,.42);z-index:40;opacity:0;visibility:hidden;pointer-events:none;transition:opacity .18s,visibility .18s}
+.scrim.open{opacity:1;visibility:visible;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:41;background:var(--surface);border-radius:18px 18px 0 0;
+  max-height:92vh;overflow:auto;transform:translateY(101%);visibility:hidden;pointer-events:none;
+  transition:transform .22s cubic-bezier(.32,.72,0,1),visibility .22s;
+  padding-bottom:calc(18px + var(--safe-b));box-shadow:0 -8px 40px rgba(0,0,0,.2)}
+.sheet.open{transform:translateY(0);visibility:visible;pointer-events:auto}
+@media (min-width:760px){
+  .sheet{left:50%;right:auto;bottom:auto;top:50%;width:680px;max-height:86vh;border-radius:16px;
+    transform:translate(-50%,-46%) scale(.98);opacity:0;transition:transform .18s,opacity .18s,visibility .18s}
+  .sheet.open{transform:translate(-50%,-50%) scale(1);opacity:1;visibility:visible;pointer-events:auto}
+}
+@media (prefers-reduced-motion:reduce){.sheet,.scrim{transition:none}}
+.sheet-head{position:sticky;top:0;background:var(--surface);display:flex;align-items:center;gap:10px;padding:14px 16px 10px;border-bottom:1px solid var(--line);z-index:2}
+.sheet-head h2{margin:0;font-size:16px;font-weight:700}
+.sheet-body{padding:14px 16px 4px}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:12px;color:var(--ink-3);letter-spacing:.06em;margin-bottom:6px;font-weight:600}
+textarea,input.txt{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;font-size:16px;outline:none;resize:vertical}
+textarea:focus,input.txt:focus,.editor:focus{border-color:var(--verb)}
+.editor{min-height:76px;background:var(--bg);border:1px solid var(--line);border-radius:11px;padding:11px 12px;
+  font-family:var(--en);font-size:17px;line-height:1.55;outline:none;white-space:pre-wrap;word-break:break-word}
+.editor:empty::before{content:attr(data-ph);color:var(--ink-3)}
+.paint{display:flex;gap:6px;margin-bottom:7px;flex-wrap:wrap;align-items:center}
+.pbtn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border-radius:9px;border:1px solid var(--line);background:var(--bg);font-size:13px;font-weight:700}
+.pbtn .sw{width:10px;height:10px;border-radius:50%}
+.pbtn.red{color:var(--subj)} .pbtn.red .sw{background:var(--subj)}
+.pbtn.blue{color:var(--verb)} .pbtn.blue .sw{background:var(--verb)}
+.pbtn.black{color:var(--ink)} .pbtn.black .sw{background:var(--ink)}
+.pbtn:active{transform:scale(.96)}
+.hint{font-size:11.5px;color:var(--ink-3);font-family:var(--mono)}
+.sheet-foot{position:sticky;bottom:0;background:var(--surface);border-top:1px solid var(--line);padding:12px 16px;display:flex;gap:9px}
+.btn{flex:1;padding:12px;border-radius:11px;font-weight:700;font-size:15px;text-align:center;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.btn.primary{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.btn.danger{color:var(--subj)}
+.row{display:flex;gap:9px}
+.row>*{flex:1}
+
+/* menu list */
+.menu{padding:6px}
+.menu button{display:flex;align-items:center;gap:11px;width:100%;padding:13px 12px;border-radius:10px;font-size:15px;text-align:left}
+.menu button:hover{background:var(--surface-2)}
+.menu button.danger{color:var(--subj)}
+.menu .sep{height:1px;background:var(--line);margin:6px 4px}
+.menu .ttl{font-size:11px;color:var(--ink-3);letter-spacing:.1em;padding:10px 12px 4px;font-weight:700}
+.switch{margin-left:auto;font-family:var(--mono);font-size:12px;color:var(--ink-3)}
+
+/* ============ practice ============ */
+.drill{padding:6px 0 120px}
+.progress{height:4px;background:var(--surface-2);border-radius:99px;overflow:hidden;margin:6px 0 16px}
+.progress i{display:block;height:100%;background:var(--ink);border-radius:99px;transition:width .25s}
+.pcount{display:flex;justify-content:space-between;font-family:var(--mono);font-size:12px;color:var(--ink-3);margin-bottom:4px}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:18px;box-shadow:var(--shadow);padding:26px 20px;min-height:210px;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.q-jp{font-size:22px;font-weight:700;line-height:1.55;letter-spacing:.01em;white-space:pre-wrap}
+.q-en{font-family:var(--en);font-size:20px;line-height:1.5;white-space:pre-wrap;padding-top:16px;border-top:1px dashed var(--line)}
+.reveal-btn{align-self:flex-start;padding:10px 18px;border-radius:999px;border:1px dashed var(--line-2);color:var(--ink-2);font-size:14px;font-weight:600}
+.q-actions{display:flex;gap:10px;margin-top:16px}
+.q-actions .btn{padding:15px}
+.q-meta{display:flex;gap:8px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.result{text-align:center;padding:40px 16px}
+.result .big{font-size:44px}
+.result h3{margin:10px 0 4px;font-size:20px}
+.result p{color:var(--ink-2);margin:0 0 22px}
+
+/* toast */
+.toast{position:fixed;left:50%;bottom:calc(90px + var(--safe-b));transform:translate(-50%,10px);z-index:60;
+  background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:13.5px;font-weight:600;
+  opacity:0;pointer-events:none;transition:.2s;box-shadow:0 6px 22px rgba(0,0,0,.25);max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.hidden{display:none !important}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="hbar">
+      <div class="brand"><span class="bolt">⚡</span><h1>瞬間英作文</h1></div>
+      <div class="spacer"></div>
+      <button class="icon-btn" id="btnLayout" title="表示切替（縦／横）">▤</button>
+      <button class="icon-btn" id="btnMenu" title="メニュー">☰</button>
+    </div>
+  </div>
+  <div class="wrap"><div class="stats">
+    <div class="stat today"><b id="sToday">0</b><span>きょう</span></div>
+    <div class="stat fire"><b id="sStreak">0</b><span>連続</span></div>
+    <div class="stat"><b id="sTotal">0</b><span>合計</span></div>
+    <div class="stat"><b id="sCount">0</b><span>文の数</span></div>
+  </div></div>
+  <div class="wrap"><nav class="tabs" role="tablist">
+    <button class="tab" id="tabList" role="tab" aria-selected="true">リスト</button>
+    <button class="tab" id="tabDrill" role="tab" aria-selected="false">練習モード</button>
+  </nav></div>
+</header>
+
+<main class="wrap">
+  <!-- ===== LIST ===== -->
+  <section id="viewList">
+    <div class="toolbar">
+      <div class="search">
+        <span style="color:var(--ink-3)">⌕</span>
+        <input id="q" type="search" placeholder="日本語・英語・タグで検索" autocomplete="off">
+      </div>
+      <select class="mini" id="sort">
+        <option value="new">新しい順</option>
+        <option value="old">古い順</option>
+        <option value="weak">苦手順（回数が少ない）</option>
+        <option value="stale">ごぶさた順</option>
+        <option value="rand">シャッフル</option>
+      </select>
+    </div>
+    <div class="chips" id="filters"></div>
+    <div class="list stack" id="list"></div>
+  </section>
+
+  <!-- ===== DRILL ===== -->
+  <section id="viewDrill" class="hidden">
+    <div class="drill" id="drillArea"></div>
+  </section>
+</main>
+
+<button class="fab" id="fab">＋ 文を追加</button>
+
+<div class="scrim" id="scrim"></div>
+
+<!-- editor sheet -->
+<div class="sheet" id="editSheet" role="dialog" aria-modal="true">
+  <div class="sheet-head">
+    <h2 id="editTitle">文を追加</h2><div class="spacer" style="flex:1"></div>
+    <button class="icon-btn" data-close>✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>日本語</label>
+      <textarea id="fJp" rows="2" placeholder="例）私は毎朝コーヒーを飲みます。"></textarea>
+    </div>
+    <div class="field">
+      <label>英語（主語＝赤／動詞＝青）</label>
+      <div class="paint">
+        <button class="pbtn red" data-color="subj"><i class="sw"></i>主語</button>
+        <button class="pbtn blue" data-color="verb"><i class="sw"></i>動詞</button>
+        <button class="pbtn black" data-color="ink"><i class="sw"></i>黒</button>
+        <span class="hint" id="paintHint">選択してから色をタップ</span>
+      </div>
+      <div class="editor" id="fEn" contenteditable="true" data-ph="I drink coffee every morning."></div>
+    </div>
+    <div class="field">
+      <label>タグ（任意・カンマ区切り）</label>
+      <input class="txt" id="fTags" placeholder="現在形, 疑問文, Duo" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>メモ（任意）</label>
+      <input class="txt" id="fNote" placeholder="間違えやすいポイントなど" autocomplete="off">
+    </div>
+    <div id="histBox" class="field hidden">
+      <label>練習の記録</label>
+      <div id="histText" class="hint" style="line-height:1.9"></div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn" data-close>キャンセル</button>
+    <button class="btn primary" id="saveItem">保存</button>
+  </div>
+</div>
+
+<!-- generic sheet (menu / bulk / data) -->
+<div class="sheet" id="uiSheet" role="dialog" aria-modal="true">
+  <div class="sheet-head">
+    <h2 id="uiTitle">メニュー</h2><div class="spacer" style="flex:1"></div>
+    <button class="icon-btn" data-close>✕</button>
+  </div>
+  <div id="uiBody"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =====================================================================
+   瞬間英作文 / Instant Composition Drill
+   A: データ層  B: 画面  C: 色エディタ  D: バッジ＆練習
+   ===================================================================== */
+
+/* ---------- A. data layer ---------- */
+const KEY = 'shunkan.v1';
+const todayStr = () => new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD (local)
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+
+const clone = o => JSON.parse(JSON.stringify(o));
+const DEFAULT = { v: 1, items: [], days: {}, settings: { layout: 'stack', mask: false, sort: 'new', filter: 'all' } };
+let DB = load();
+
+function load() {
+  try {
+    const raw = localStorage.getItem(KEY);
+    if (!raw) return clone(DEFAULT);
+    const d = JSON.parse(raw);
+    return Object.assign(clone(DEFAULT), d, { settings: Object.assign({}, DEFAULT.settings, d.settings || {}) });
+  } catch (e) { return clone(DEFAULT); }
+}
+let saveTimer = null;
+function save() {
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(() => {
+    try { localStorage.setItem(KEY, JSON.stringify(DB)); }
+    catch (e) { toast('保存できませんでした（容量不足かも）'); }
+  }, 120);
+}
+
+function addItem(jp, en, tags = [], note = '') {
+  const it = { id: uid(), jp: jp.trim(), en: en, tags, note, count: 0, last: null, hist: [], created: Date.now() };
+  DB.items.unshift(it); save(); return it;
+}
+function getItem(id) { return DB.items.find(i => i.id === id); }
+function removeItem(id) { DB.items = DB.items.filter(i => i.id !== id); save(); }
+
+function markDone(id) {
+  const it = getItem(id); if (!it) return;
+  const t = todayStr();
+  it.count++; it.last = t;
+  it.hist.push(t); if (it.hist.length > 60) it.hist = it.hist.slice(-60);
+  DB.days[t] = (DB.days[t] || 0) + 1;
+  save();
+}
+function undoDone(id) {
+  const it = getItem(id); if (!it || !it.count) return;
+  const t = todayStr();
+  if (it.hist[it.hist.length - 1] === t) {
+    it.hist.pop(); it.count--;
+    it.last = it.hist.length ? it.hist[it.hist.length - 1] : null;
+    DB.days[t] = Math.max(0, (DB.days[t] || 1) - 1);
+    if (!DB.days[t]) delete DB.days[t];
+    save();
+  }
+}
+
+/* 日付ユーティリティ */
+function daysAgo(dateStr) {
+  if (!dateStr) return null;
+  const a = new Date(dateStr + 'T00:00:00'), b = new Date(todayStr() + 'T00:00:00');
+  return Math.round((b - a) / 86400000);
+}
+function relLabel(dateStr) {
+  const d = daysAgo(dateStr);
+  if (d === null) return '未練習';
+  if (d === 0) return '今日';
+  if (d === 1) return '昨日';
+  if (d < 7) return d + '日前';
+  const [, m, dd] = dateStr.split('-');
+  return `${+m}/${+dd}`;
+}
+function streak() {
+  let n = 0; const d = new Date();
+  if (!DB.days[todayStr()]) d.setDate(d.getDate() - 1); // 今日まだでも昨日まで続いていれば継続中
+  for (;;) {
+    const k = d.toLocaleDateString('sv-SE');
+    if (DB.days[k]) { n++; d.setDate(d.getDate() - 1); } else break;
+  }
+  return n;
+}
+
+/* ---------- D-1. badge ---------- */
+const LEVELS = [
+  { min: 0,  cls: '',    icon: '·',  name: 'NEW' },
+  { min: 1,  cls: 'lv1', icon: '🌱', name: 'Lv.1' },
+  { min: 3,  cls: 'lv2', icon: '🔥', name: 'Lv.2' },
+  { min: 6,  cls: 'lv3', icon: '⭐', name: 'Lv.3' },
+  { min: 12, cls: 'lv4', icon: '💎', name: 'Lv.4' },
+  { min: 24, cls: 'lv5', icon: '👑', name: 'MASTER' }
+];
+function levelOf(c) { let l = LEVELS[0]; for (const x of LEVELS) if (c >= x.min) l = x; return l; }
+function nextGap(c) { const nx = LEVELS.find(x => x.min > c); return nx ? nx.min - c : 0; }
+const isDue = it => it.count > 0 && daysAgo(it.last) >= 3;
+const doneToday = it => it.last === todayStr();
+
+/* ---------- C. sanitize + editor ---------- */
+const COLORVAR = { subj: 'var(--subj)', verb: 'var(--verb)', ink: 'var(--ink)' };
+const COLORHEX = { subj: '#E0334B', verb: '#1B62D6', ink: '' };
+
+/** 許可するのは span[data-c] と改行のみ。色は data-c 属性で保存し、表示時に CSS 変数へ写す（ダークモード対応） */
+function sanitize(html) {
+  const box = document.createElement('div');
+  box.innerHTML = html;
+  const out = document.createElement('div');
+  (function walk(src, dst) {
+    src.childNodes.forEach(n => {
+      if (n.nodeType === 3) { dst.appendChild(document.createTextNode(n.nodeValue)); return; }
+      if (n.nodeType !== 1) return;
+      const tag = n.tagName.toLowerCase();
+      if (tag === 'br') { dst.appendChild(document.createElement('br')); return; }
+      let c = n.dataset ? n.dataset.c : null;
+      if (!c) {
+        const col = (n.getAttribute && (n.getAttribute('color') || '')) + ' ' + (n.style ? n.style.color : '');
+        const s = col.toLowerCase();
+        if (s.includes('224, 51, 75') || s.includes('#e0334b') || s.includes('--subj')) c = 'subj';
+        else if (s.includes('27, 98, 214') || s.includes('#1b62d6') || s.includes('--verb')) c = 'verb';
+      }
+      let dstNext = dst;
+      if (c === 'subj' || c === 'verb') {
+        const sp = document.createElement('span');
+        sp.dataset.c = c; sp.style.color = COLORVAR[c];
+        dst.appendChild(sp); dstNext = sp;
+      } else if (tag === 'div' || tag === 'p') {
+        if (dst.childNodes.length) dst.appendChild(document.createElement('br'));
+      }
+      walk(n, dstNext);
+    });
+  })(box, out);
+  return out.innerHTML.replace(/(<br>)+$/, '');
+}
+const plain = html => { const d = document.createElement('div'); d.innerHTML = html || ''; return (d.textContent || '').trim(); };
+
+const fEn = document.getElementById('fEn');
+let savedRange = null;
+document.addEventListener('selectionchange', () => {
+  const s = window.getSelection();
+  if (s && s.rangeCount && fEn.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange();
+});
+function paint(kind) {
+  fEn.focus();
+  const sel = window.getSelection();
+  if (savedRange && (!sel.rangeCount || sel.isCollapsed || !fEn.contains(sel.anchorNode))) {
+    sel.removeAllRanges(); sel.addRange(savedRange);
+  }
+  if (!sel.rangeCount || sel.isCollapsed) { toast('色をつけたい部分を選んでからタップ'); return; }
+  const range = sel.getRangeAt(0);
+  const frag = range.extractContents();
+  // 既存の色指定を一度はがす
+  frag.querySelectorAll && frag.querySelectorAll('span[data-c]').forEach(sp => {
+    while (sp.firstChild) sp.parentNode.insertBefore(sp.firstChild, sp);
+    sp.remove();
+  });
+  let node;
+  if (kind === 'ink') { node = frag; }
+  else { const sp = document.createElement('span'); sp.dataset.c = kind; sp.style.color = COLORVAR[kind]; sp.appendChild(frag); node = sp; }
+  range.insertNode(node);
+  sel.removeAllRanges();
+  const r = document.createRange();
+  r.selectNodeContents(node.nodeType === 1 ? node : fEn);
+  sel.addRange(r); savedRange = r.cloneRange();
+  fEn.normalize();
+}
+document.querySelectorAll('.pbtn').forEach(b => {
+  b.addEventListener('pointerdown', e => e.preventDefault());
+  b.addEventListener('click', () => paint(b.dataset.color));
+});
+fEn.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && ['1', '2', '3'].includes(e.key)) {
+    e.preventDefault(); paint({ '1': 'subj', '2': 'verb', '3': 'ink' }[e.key]);
+  }
+  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveEditor(); }
+});
+fEn.addEventListener('paste', e => {
+  e.preventDefault();
+  const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+  document.execCommand('insertText', false, t);
+});
+
+/* ---------- B. shell / sheets ---------- */
+const $ = s => document.querySelector(s);
+const scrim = $('#scrim'), editSheet = $('#editSheet'), uiSheet = $('#uiSheet');
+function openSheet(el) { scrim.classList.add('open'); el.classList.add('open'); }
+function closeSheets() { scrim.classList.remove('open'); editSheet.classList.remove('open'); uiSheet.classList.remove('open'); }
+scrim.addEventListener('click', closeSheets);
+document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheets));
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheets(); });
+
+let toastTimer;
+function toast(msg) {
+  const t = $('#toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('show'), 1900);
+}
+
+/* editor open/save */
+let editingId = null;
+function openEditor(id) {
+  editingId = id || null;
+  const it = id ? getItem(id) : null;
+  $('#editTitle').textContent = it ? '文を編集' : '文を追加';
+  $('#fJp').value = it ? it.jp : '';
+  fEn.innerHTML = it ? it.en : '';
+  $('#fTags').value = it ? (it.tags || []).join(', ') : '';
+  $('#fNote').value = it ? (it.note || '') : '';
+  const hb = $('#histBox');
+  if (it && it.count) {
+    hb.classList.remove('hidden');
+    const lv = levelOf(it.count);
+    const recent = it.hist.slice(-8).reverse().map(d => relLabel(d)).join(' ・ ');
+    $('#histText').innerHTML = `${lv.icon} ${lv.name}／通算 ${it.count} 回<br>最近：${recent || '—'}`;
+  } else hb.classList.add('hidden');
+  openSheet(editSheet);
+  setTimeout(() => $('#fJp').focus(), 220);
+}
+function saveEditor() {
+  const jp = $('#fJp').value.trim();
+  const en = sanitize(fEn.innerHTML);
+  if (!jp && !plain(en)) { toast('日本語か英語を入力してね'); return; }
+  const tags = $('#fTags').value.split(/[,、]/).map(s => s.trim()).filter(Boolean);
+  const note = $('#fNote').value.trim();
+  if (editingId) {
+    const it = getItem(editingId);
+    Object.assign(it, { jp, en, tags, note }); save(); toast('保存しました');
+  } else { addItem(jp, en, tags, note); toast('追加しました'); }
+  closeSheets(); render();
+}
+$('#saveItem').addEventListener('click', saveEditor);
+$('#fab').addEventListener('click', () => openEditor(null));
+
+/* ---------- B-2. list render ---------- */
+const listEl = $('#list');
+let shuffleSeed = Math.random();
+
+function currentSet() {
+  const q = $('#q').value.trim().toLowerCase();
+  const f = DB.settings.filter;
+  let arr = DB.items.slice();
+  if (q) arr = arr.filter(i => (i.jp + ' ' + plain(i.en) + ' ' + (i.tags || []).join(' ') + ' ' + (i.note || '')).toLowerCase().includes(q));
+  if (f === 'todo') arr = arr.filter(i => !doneToday(i));
+  else if (f === 'due') arr = arr.filter(i => isDue(i));
+  else if (f === 'new') arr = arr.filter(i => !i.count);
+  else if (f && f.startsWith('tag:')) { const t = f.slice(4); arr = arr.filter(i => (i.tags || []).includes(t)); }
+  const s = DB.settings.sort;
+  if (s === 'new') arr.sort((a, b) => b.created - a.created);
+  else if (s === 'old') arr.sort((a, b) => a.created - b.created);
+  else if (s === 'weak') arr.sort((a, b) => a.count - b.count || a.created - b.created);
+  else if (s === 'stale') { const st = i => (i.last === null ? 9999 : daysAgo(i.last)); arr.sort((a, b) => st(b) - st(a)); }
+  else if (s === 'rand') arr.sort(() => Math.random() - .5);
+  return arr;
+}
+
+function cardHTML(it) {
+  const lv = levelOf(it.count);
+  const done = doneToday(it), due = isDue(it);
+  const cls = ['card', done ? '' : (due ? 'due' : (it.count ? '' : 'new'))].join(' ');
+  const last = `<span class="last ${done ? 'hot' : (due ? 'due' : '')}">${it.count ? '最終 ' + relLabel(it.last) : '未練習'}</span>`;
+  const dots = weekDots(it);
+  const tags = (it.tags || []).map(t => `<span class="tag">#${esc(t)}</span>`).join('');
+  return `<article class="${cls} ${DB.settings.mask ? 'masked' : ''}" data-id="${it.id}">
+    <div class="pair">
+      <div class="jp">${esc(it.jp) || '<span style="color:var(--ink-3)">（日本語なし）</span>'}</div>
+      <div class="en">${it.en || ''}</div>
+    </div>
+    <div class="meta">
+      <span class="badge ${lv.cls}">${lv.icon} ${lv.name}<span style="opacity:.6">×${it.count}</span></span>
+      ${last}${dots}${tags}
+      <span class="card-actions">
+        <button class="more" data-act="more">⋯</button>
+        <button class="did ${done ? 'done' : ''}" data-act="did">${done ? '✓ 今日OK' : '⚡ できた'}</button>
+      </span>
+    </div>
+  </article>`;
+}
+function weekDots(it) {
+  let h = '<span class="dots" title="直近7日">';
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    const k = d.toLocaleDateString('sv-SE');
+    h += `<i class="dot ${it.hist.includes(k) ? 'on' : ''}"></i>`;
+  }
+  return h + '</span>';
+}
+const esc = s => (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function renderFilters() {
+  const tagSet = new Map();
+  DB.items.forEach(i => (i.tags || []).forEach(t => tagSet.set(t, (tagSet.get(t) || 0) + 1)));
+  const base = [
+    ['all', 'すべて', DB.items.length],
+    ['todo', '今日まだ', DB.items.filter(i => !doneToday(i)).length],
+    ['due', '復習おすすめ', DB.items.filter(isDue).length],
+    ['new', '未練習', DB.items.filter(i => !i.count).length]
+  ];
+  const tags = [...tagSet.entries()].sort((a, b) => b[1] - a[1]).map(([t, n]) => ['tag:' + t, '#' + t, n]);
+  $('#filters').innerHTML = base.concat(tags).map(([k, label, n]) =>
+    `<button class="chip" data-f="${esc(k)}" aria-pressed="${DB.settings.filter === k}">${esc(label)}<span class="n">${n}</span></button>`).join('');
+}
+
+function renderStats() {
+  $('#sToday').textContent = DB.days[todayStr()] || 0;
+  $('#sStreak').textContent = streak();
+  $('#sTotal').textContent = DB.items.reduce((a, b) => a + b.count, 0);
+  $('#sCount').textContent = DB.items.length;
+}
+
+function render() {
+  renderStats(); renderFilters();
+  listEl.className = 'list ' + DB.settings.layout;
+  const arr = currentSet();
+  if (!arr.length) {
+    listEl.innerHTML = DB.items.length
+      ? `<div class="empty"><div class="big">🔍</div><b>該当する文がありません</b>条件を変えてみてください</div>`
+      : `<div class="empty"><div class="big">⚡</div><b>まずは1文つくろう</b>右下の「＋ 文を追加」から。<br>メニュー →「まとめて追加」で一気に登録もできます。</div>`;
+    return;
+  }
+  listEl.innerHTML = arr.map(cardHTML).join('');
+}
+
+listEl.addEventListener('click', e => {
+  const card = e.target.closest('.card'); if (!card) return;
+  const id = card.dataset.id;
+  const act = e.target.closest('[data-act]')?.dataset.act;
+  if (act === 'did') {
+    if (doneToday(getItem(id))) { undoDone(id); toast('今日の記録を取り消しました'); }
+    else { markDone(id); card.classList.add('flash'); toast('⚡ 記録しました'); }
+    setTimeout(render, 160);
+    return;
+  }
+  if (act === 'more') { itemMenu(id); return; }
+  if (DB.settings.mask) card.classList.toggle('masked');
+});
+
+$('#q').addEventListener('input', render);
+$('#sort').addEventListener('change', e => { DB.settings.sort = e.target.value; save(); render(); });
+$('#filters').addEventListener('click', e => {
+  const c = e.target.closest('.chip'); if (!c) return;
+  DB.settings.filter = c.dataset.f; save(); render();
+});
+$('#btnLayout').addEventListener('click', () => {
+  DB.settings.layout = DB.settings.layout === 'stack' ? 'side' : 'stack'; save(); render();
+  toast(DB.settings.layout === 'side' ? '横ならび表示' : '上下表示');
+});
+
+/* ---------- B-3. menus ---------- */
+function showUI(title, html) { $('#uiTitle').textContent = title; $('#uiBody').onclick = null; $('#uiBody').innerHTML = html; openSheet(uiSheet); }
+
+function itemMenu(id) {
+  const it = getItem(id);
+  showUI('この文', `<div class="menu">
+    <button data-m="edit">✏️ 編集する</button>
+    <button data-m="dup">⧉ 複製する</button>
+    <button data-m="copy">📋 英文をコピー</button>
+    <div class="sep"></div>
+    <div class="ttl">キロク</div>
+    <button data-m="reset">↺ 回数をリセット<span class="switch">${it.count}回</span></button>
+    <div class="sep"></div>
+    <button class="danger" data-m="del">🗑 削除する</button>
+  </div>`);
+  $('#uiBody').onclick = e => {
+    const m = e.target.closest('[data-m]')?.dataset.m; if (!m) return;
+    if (m === 'edit') { closeSheets(); setTimeout(() => openEditor(id), 180); }
+    if (m === 'dup') { const n = addItem(it.jp, it.en, it.tags, it.note); closeSheets(); render(); toast('複製しました'); }
+    if (m === 'copy') { navigator.clipboard?.writeText(plain(it.en)); closeSheets(); toast('コピーしました'); }
+    if (m === 'reset') { it.count = 0; it.last = null; it.hist = []; save(); closeSheets(); render(); toast('リセットしました'); }
+    if (m === 'del') { if (confirm('この文を削除しますか？')) { removeItem(id); closeSheets(); render(); toast('削除しました'); } }
+  };
+}
+
+$('#btnMenu').addEventListener('click', () => {
+  showUI('メニュー', `<div class="menu">
+    <button data-m="bulk">📥 まとめて追加</button>
+    <button data-m="mask">🙈 リストで英文を隠す<span class="switch">${DB.settings.mask ? 'ON' : 'OFF'}</span></button>
+    <button data-m="layout">▤ 表示：${DB.settings.layout === 'side' ? '横ならび' : '上下'}</button>
+    <div class="sep"></div>
+    <div class="ttl">データ</div>
+    <button data-m="export">⬇️ バックアップを書き出す</button>
+    <button data-m="import">⬆️ バックアップを読み込む</button>
+    <button data-m="csv">📄 テキストで書き出す</button>
+    <div class="sep"></div>
+    <button data-m="help">❓ 使い方とバッジ</button>
+    <button class="danger" data-m="wipe">🧨 全部消す</button>
+  </div>`);
+  $('#uiBody').onclick = e => {
+    const m = e.target.closest('[data-m]')?.dataset.m; if (!m) return;
+    if (m === 'bulk') return bulkUI();
+    if (m === 'mask') { DB.settings.mask = !DB.settings.mask; save(); render(); closeSheets(); toast(DB.settings.mask ? '英文を隠しました（タップで表示）' : '英文を表示します'); }
+    if (m === 'layout') { DB.settings.layout = DB.settings.layout === 'stack' ? 'side' : 'stack'; save(); render(); closeSheets(); }
+    if (m === 'export') doExport();
+    if (m === 'import') doImport();
+    if (m === 'csv') doText();
+    if (m === 'help') return helpUI();
+    if (m === 'wipe') { if (confirm('すべての文と記録を削除します。よろしいですか？')) { DB = clone(DEFAULT); save(); closeSheets(); render(); toast('初期化しました'); } }
+  };
+});
+
+function helpUI() {
+  showUI('使い方とバッジ', `<div class="sheet-body" style="font-size:14px;line-height:1.9;color:var(--ink-2)">
+    <b style="color:var(--ink)">基本</b><br>
+    日本語を見て、声に出して英語を言う → 言えたら「⚡ できた」。<br>
+    それだけで回数・日付・バッジが記録されます。<br><br>
+    <b style="color:var(--ink)">色</b><br>
+    編集画面で英文の一部を選んで <span style="color:var(--subj);font-weight:700">主語</span>／<span style="color:var(--verb);font-weight:700">動詞</span>／黒 をタップ。<br>
+    Macなら ⌘1（赤）・⌘2（青）・⌘3（黒）、⌘Enter で保存。<br><br>
+    <b style="color:var(--ink)">バッジ</b><br>
+    ${LEVELS.map(l => `${l.icon} <span class="badge ${l.cls}">${l.name}</span> ${l.min}回〜`).join('<br>')}<br><br>
+    <b style="color:var(--ink)">マーク</b><br>
+    左の金色の線 ＝ 3日以上やっていない「復習おすすめ」。<br>
+    緑の点 ＝ 直近7日でやった日。<br><br>
+    <b style="color:var(--ink)">保存について</b><br>
+    データはこの端末の中だけに保存されます。iPhoneとMacの間では同期しないので、移すときは「バックアップを書き出す／読み込む」を使ってください。
+  </div>`);
+}
+
+/* ---------- A-2. bulk / import / export ---------- */
+function bulkUI() {
+  showUI('まとめて追加', `<div class="sheet-body">
+    <div class="field">
+      <label>1行に1文。日本語と英語を タブ か ｜ で区切る</label>
+      <textarea id="bulkT" rows="9" placeholder="私は毎朝コーヒーを飲みます。 | I drink coffee every morning.
+彼は昨日ここに来ました。 | He came here yesterday."></textarea>
+    </div>
+    <div class="field">
+      <label>共通タグ（任意）</label>
+      <input class="txt" id="bulkTag" placeholder="Duo, 現在形">
+    </div>
+    <div class="hint">※ 区切りがない行は日本語だけの文として追加します。色は後から編集画面でつけられます。</div>
+  </div>
+  <div class="sheet-foot"><button class="btn" data-close>やめる</button><button class="btn primary" id="bulkGo">追加する</button></div>`);
+  $('#uiBody').querySelectorAll('[data-close]').forEach(b => b.onclick = closeSheets);
+  $('#bulkGo').onclick = () => {
+    const tags = $('#bulkTag').value.split(/[,、]/).map(s => s.trim()).filter(Boolean);
+    const lines = $('#bulkT').value.split('\n').map(s => s.trim()).filter(Boolean);
+    let n = 0;
+    lines.forEach(line => {
+      const p = line.split(/\t|\s*[|｜]\s*/);
+      const jp = (p[0] || '').trim(), en = (p[1] || '').trim();
+      addItem(jp, esc(en), tags); n++;
+    });
+    closeSheets(); render(); toast(n + ' 文を追加しました');
+  };
+}
+function doExport() {
+  const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `瞬間英作文_${todayStr()}.json`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  closeSheets(); toast('バックアップを書き出しました');
+}
+function doText() {
+  const txt = DB.items.map(i => `${i.jp}\t${plain(i.en)}`).join('\n');
+  const blob = new Blob([txt], { type: 'text/plain' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = `瞬間英作文_${todayStr()}.txt`;
+  a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  closeSheets(); toast('テキストで書き出しました');
+}
+function doImport() {
+  const inp = document.createElement('input');
+  inp.type = 'file'; inp.accept = 'application/json,.json';
+  inp.onchange = () => {
+    const f = inp.files[0]; if (!f) return;
+    const r = new FileReader();
+    r.onload = () => {
+      try {
+        const d = JSON.parse(r.result);
+        if (!d.items) throw 0;
+        const mode = confirm('OK＝今のデータに追加 ／ キャンセル＝すべて置きかえ');
+        if (mode) {
+          const ids = new Set(DB.items.map(i => i.id));
+          d.items.forEach(i => { if (ids.has(i.id)) i.id = uid(); DB.items.unshift(i); });
+          Object.entries(d.days || {}).forEach(([k, v]) => DB.days[k] = (DB.days[k] || 0) + v);
+        } else {
+          DB = Object.assign(clone(DEFAULT), d, { settings: Object.assign({}, DEFAULT.settings, d.settings || {}) });
+        }
+        save(); closeSheets(); render(); toast('読み込みました');
+      } catch (e) { toast('読み込めませんでした'); }
+    };
+    r.readAsText(f);
+  };
+  inp.click();
+}
+
+/* ---------- D-2. practice mode ---------- */
+let drill = null;
+function startDrill(opts) {
+  let arr = currentSet();
+  if (opts.only === 'todo') arr = arr.filter(i => !doneToday(i));
+  if (opts.only === 'due') arr = arr.filter(i => isDue(i) || !i.count);
+  if (opts.order === 'rand') arr = arr.sort(() => Math.random() - .5);
+  if (opts.order === 'weak') arr = arr.sort((a, b) => a.count - b.count);
+  if (!arr.length) { toast('対象の文がありません'); return; }
+  drill = { queue: arr.map(i => i.id), i: 0, ok: 0, again: 0, shown: false, dir: opts.dir };
+  renderDrill();
+}
+function renderDrill() {
+  const el = $('#drillArea');
+  if (!drill) {
+    el.innerHTML = `<div class="qcard" style="min-height:auto;gap:14px">
+      <div style="font-size:15px;font-weight:700">練習の設定</div>
+      <div class="field"><label>対象</label>
+        <div class="row">
+          <button class="btn" data-o="only:all">すべて</button>
+          <button class="btn" data-o="only:todo">今日まだ</button>
+          <button class="btn" data-o="only:due">復習＋未練習</button>
+        </div><div class="hint" id="oOnly" style="margin-top:6px"></div></div>
+      <div class="field"><label>順番</label>
+        <div class="row">
+          <button class="btn" data-o="order:list">リスト順</button>
+          <button class="btn" data-o="order:rand">シャッフル</button>
+          <button class="btn" data-o="order:weak">苦手順</button>
+        </div><div class="hint" id="oOrder" style="margin-top:6px"></div></div>
+      <div class="field"><label>出す方向</label>
+        <div class="row">
+          <button class="btn" data-o="dir:jp2en">日本語 → 英語</button>
+          <button class="btn" data-o="dir:en2jp">英語 → 日本語</button>
+        </div><div class="hint" id="oDir" style="margin-top:6px"></div></div>
+      <button class="btn primary" id="goDrill" style="padding:15px">⚡ 開始する</button>
+    </div>
+    <div class="hint" style="text-align:center;margin-top:14px">リストの検索・フィルタもそのまま反映されます</div>`;
+    const opt = window.__drillOpt = window.__drillOpt || { only: 'all', order: 'list', dir: 'jp2en' };
+    const paintOpt = () => {
+      el.querySelectorAll('[data-o]').forEach(b => {
+        const [k, v] = b.dataset.o.split(':');
+        b.classList.toggle('primary', opt[k] === v);
+      });
+      $('#oOnly').textContent = { all: '登録した全部から', todo: '今日まだやっていない文だけ', due: '3日以上あいた文＋未練習の文' }[opt.only];
+      $('#oOrder').textContent = { list: 'リストの並び順のまま', rand: '毎回ランダム', weak: '回数の少ない文から' }[opt.order];
+      $('#oDir').textContent = { jp2en: '日本語を見て英語を言う（基本）', en2jp: '英語を見て意味を言う' }[opt.dir];
+    };
+    el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { const [k, v] = b.dataset.o.split(':'); opt[k] = v; paintOpt(); });
+    paintOpt();
+    $('#goDrill').onclick = () => startDrill(opt);
+    return;
+  }
+  if (drill.i >= drill.queue.length) {
+    const total = drill.ok + drill.again;
+    el.innerHTML = `<div class="result">
+      <div class="big">${drill.again === 0 ? '👑' : (drill.ok >= drill.again ? '⚡' : '🌱')}</div>
+      <h3>${drill.ok} 文クリア</h3>
+      <p>もう一回：${drill.again} 文／全 ${total} 文<br>今日の合計 ${DB.days[todayStr()] || 0} 回・連続 ${streak()} 日</p>
+      <div class="row" style="max-width:400px;margin:0 auto">
+        <button class="btn" id="drillAgain">もう一周</button>
+        <button class="btn primary" id="drillEnd">終わる</button>
+      </div></div>`;
+    $('#drillAgain').onclick = () => { const o = window.__drillOpt; drill = null; startDrill(o); };
+    $('#drillEnd').onclick = () => { drill = null; renderDrill(); render(); };
+    return;
+  }
+  const it = getItem(drill.queue[drill.i]);
+  if (!it) { drill.i++; return renderDrill(); }
+  const lv = levelOf(it.count);
+  const front = drill.dir === 'en2jp' ? `<div class="q-jp" style="font-family:var(--en)">${it.en || ''}</div>` : `<div class="q-jp">${esc(it.jp)}</div>`;
+  const back = drill.dir === 'en2jp' ? `<div class="q-en" style="font-family:var(--jp);font-weight:600">${esc(it.jp)}</div>` : `<div class="q-en">${it.en || ''}</div>`;
+  el.innerHTML = `
+    <div class="pcount"><span>${drill.i + 1} / ${drill.queue.length}</span><span>✓ ${drill.ok}　↺ ${drill.again}</span></div>
+    <div class="progress"><i style="width:${(drill.i / drill.queue.length) * 100}%"></i></div>
+    <div class="qcard">
+      ${front}
+      ${drill.shown ? back : `<button class="reveal-btn" id="reveal">答えを見る</button>`}
+      ${it.note && drill.shown ? `<div class="hint">${esc(it.note)}</div>` : ''}
+    </div>
+    <div class="q-meta">
+      <span class="badge ${lv.cls}">${lv.icon} ${lv.name}<span style="opacity:.6">×${it.count}</span></span>
+      <span class="last">${it.count ? '最終 ' + relLabel(it.last) : '未練習'}</span>
+      ${weekDots(it)}
+      <button class="more" id="drillQuit" style="margin-left:auto">✕</button>
+    </div>
+    <div class="q-actions">
+      <button class="btn" id="btnAgain">↺ もう一回</button>
+      <button class="btn primary" id="btnOk">⚡ 言えた</button>
+    </div>
+    <div class="hint" style="text-align:center;margin-top:12px">スペース＝答えを見る／→＝言えた／←＝もう一回</div>`;
+  $('#reveal') && ($('#reveal').onclick = () => { drill.shown = true; renderDrill(); });
+  $('#btnOk').onclick = () => { if (!drill.shown) { drill.shown = true; return renderDrill(); } markDone(it.id); drill.ok++; drill.i++; drill.shown = false; renderDrill(); renderStats(); };
+  $('#btnAgain').onclick = () => { drill.queue.push(it.id); drill.again++; drill.i++; drill.shown = false; renderDrill(); };
+  $('#drillQuit').onclick = () => { drill = null; renderDrill(); render(); };
+}
+document.addEventListener('keydown', e => {
+  if (!drill || $('#viewDrill').classList.contains('hidden')) return;
+  if (editSheet.classList.contains('open') || uiSheet.classList.contains('open')) return;
+  if (e.key === ' ') { e.preventDefault(); if (!drill.shown) { drill.shown = true; renderDrill(); } }
+  if (e.key === 'ArrowRight') { e.preventDefault(); $('#btnOk')?.click(); }
+  if (e.key === 'ArrowLeft') { e.preventDefault(); $('#btnAgain')?.click(); }
+});
+
+/* ---------- tabs ---------- */
+function setTab(which) {
+  const l = which === 'list';
+  $('#tabList').setAttribute('aria-selected', l);
+  $('#tabDrill').setAttribute('aria-selected', !l);
+  $('#viewList').classList.toggle('hidden', !l);
+  $('#viewDrill').classList.toggle('hidden', l);
+  $('#fab').classList.toggle('hidden', !l);
+  if (l) render(); else renderDrill();
+}
+$('#tabList').onclick = () => setTab('list');
+$('#tabDrill').onclick = () => setTab('drill');
+
+/* ---------- fab: 下スクロール中は退避（ボタンの上に乗らないように） ---------- */
+(function () {
+  const fab = $('#fab');
+  let lastY = window.scrollY, idle = null;
+  window.addEventListener('scroll', () => {
+    const y = window.scrollY;
+    if (y > lastY + 8 && y > 120) fab.classList.add('tuck');
+    else if (y < lastY - 8 || y < 60) fab.classList.remove('tuck');
+    lastY = y;
+    clearTimeout(idle);
+    idle = setTimeout(() => fab.classList.remove('tuck'), 800);
+  }, { passive: true });
+})();
+
+/* ---------- boot ---------- */
+$('#sort').value = DB.settings.sort;
+render();
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+}
+</script>
+</body>
+</html>
