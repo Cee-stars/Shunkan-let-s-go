@@ -213,6 +213,50 @@ textarea:focus,input.txt:focus,.editor:focus{border-color:var(--verb)}
   opacity:0;pointer-events:none;transition:.2s;box-shadow:0 6px 22px rgba(0,0,0,.25);max-width:90vw;text-align:center}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 .hidden{display:none !important}
+
+/* ============ question mode ============ */
+/* deck switch */
+.deck{display:flex;gap:2px;background:var(--surface-2);border-radius:999px;padding:3px;margin:0 0 10px}
+.deck button{flex:1;height:34px;border-radius:999px;font-size:13.5px;font-weight:700;color:var(--ink-3);transition:background .18s,color .18s,transform .12s}
+.deck button[aria-pressed="true"]{background:var(--surface);color:var(--ink);box-shadow:var(--shadow)}
+.deck button:active{transform:scale(.97)}
+@media (prefers-reduced-motion:reduce){.deck button{transition:none}}
+
+/* question card (list) */
+.qcard-item{display:flex;flex-direction:column}
+.qbase{font-family:var(--en);font-size:16.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
+u.tgt{text-decoration:underline;text-decoration-color:var(--subj);text-decoration-thickness:2px;text-underline-offset:3px;
+  background:color-mix(in srgb,var(--subj) 12%,transparent);padding:0 2px;border-radius:3px;color:var(--ink)}
+.cue-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:9px 0 8px}
+.cue{font-family:var(--mono);font-size:11.5px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:999px;background:var(--surface-2);color:var(--ink-2)}
+.cue.wh{color:var(--verb);background:color-mix(in srgb,var(--verb) 10%,transparent)}
+.cue.yesno{color:var(--done);background:color-mix(in srgb,var(--done) 10%,transparent)}
+.cue.tag{color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,transparent)}
+.cue.neg{color:var(--subj);background:color-mix(in srgb,var(--subj) 10%,transparent)}
+.cue.choice{color:var(--verb);background:color-mix(in srgb,var(--verb) 10%,transparent);border:1px solid var(--line-2)}
+.cue.indirect{color:var(--ink-2);background:color-mix(in srgb,var(--ink-2) 10%,transparent)}
+.cue-txt{font-size:13px;color:var(--ink-2)}
+.qans{font-family:var(--en);font-size:16.5px;line-height:1.5;white-space:pre-wrap;word-break:break-word;border-left:2px solid var(--verb);padding-left:11px}
+.qans:empty::before{content:"模範解答が未入力";color:var(--ink-3);font-size:14px}
+.qa{font-family:var(--en);font-size:13px;color:var(--ink-3);margin-top:6px;padding-left:13px}
+.qa:empty{display:none}
+.masked .qans,.masked .qa{filter:blur(7px);opacity:.55;cursor:pointer;user-select:none}
+
+/* question drill */
+.q-base{font-family:var(--en);font-size:20px;line-height:1.5;white-space:pre-wrap}
+.q-ans{font-family:var(--en);font-size:20px;line-height:1.5;white-space:pre-wrap;padding-top:16px;border-top:1px dashed var(--line)}
+.q-a{font-family:var(--en);font-size:15px;color:var(--ink-2);margin-top:-6px}
+.qcard .cue-row{margin:2px 0 0}
+
+/* hint */
+.hintbtn{align-self:flex-start;padding:7px 14px;border-radius:999px;border:1px dashed var(--line-2);color:var(--ink-3);font-size:13px;font-weight:600}
+.hintword{font-family:var(--en);font-size:18px;font-weight:700;color:var(--verb);letter-spacing:.01em}
+
+/* kind chips */
+.kinds{display:flex;gap:6px;flex-wrap:wrap}
+.kchip{white-space:nowrap;padding:7px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:13px;color:var(--ink-2)}
+.kchip[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.kchip:active{transform:scale(.96)}
 </style>
 </head>
 <body>
@@ -230,7 +274,7 @@ textarea:focus,input.txt:focus,.editor:focus{border-color:var(--verb)}
     <div class="stat today"><b id="sToday">0</b><span>きょう</span></div>
     <div class="stat fire"><b id="sStreak">0</b><span>連続</span></div>
     <div class="stat"><b id="sTotal">0</b><span>合計</span></div>
-    <div class="stat"><b id="sCount">0</b><span>文の数</span></div>
+    <div class="stat"><b id="sCount">0</b><span id="sCountLabel">文の数</span></div>
   </div></div>
   <div class="wrap"><nav class="tabs" role="tablist">
     <button class="tab" id="tabList" role="tab" aria-selected="true">リスト</button>
@@ -239,6 +283,12 @@ textarea:focus,input.txt:focus,.editor:focus{border-color:var(--verb)}
 </header>
 
 <main class="wrap">
+  <!-- ===== DECK SWITCH ===== -->
+  <div class="deck" id="deck" role="tablist">
+    <button data-deck="w" aria-pressed="true">⚡ 英作文</button>
+    <button data-deck="q" aria-pressed="false">❓ 疑問文</button>
+  </div>
+
   <!-- ===== LIST ===== -->
   <section id="viewList">
     <div class="toolbar">
@@ -282,9 +332,9 @@ textarea:focus,input.txt:focus,.editor:focus{border-color:var(--verb)}
     <div class="field">
       <label>英語（主語＝赤／動詞＝青）</label>
       <div class="paint">
-        <button class="pbtn red" data-color="subj"><i class="sw"></i>主語</button>
-        <button class="pbtn blue" data-color="verb"><i class="sw"></i>動詞</button>
-        <button class="pbtn black" data-color="ink"><i class="sw"></i>黒</button>
+        <button class="pbtn red" data-color="subj" data-for="fEn"><i class="sw"></i>主語</button>
+        <button class="pbtn blue" data-color="verb" data-for="fEn"><i class="sw"></i>動詞</button>
+        <button class="pbtn black" data-color="ink" data-for="fEn"><i class="sw"></i>黒</button>
         <span class="hint" id="paintHint">選択してから色をタップ</span>
       </div>
       <div class="editor" id="fEn" contenteditable="true" data-ph="I drink coffee every morning."></div>
@@ -305,6 +355,59 @@ textarea:focus,input.txt:focus,.editor:focus{border-color:var(--verb)}
   <div class="sheet-foot">
     <button class="btn" data-close>キャンセル</button>
     <button class="btn primary" id="saveItem">保存</button>
+  </div>
+</div>
+
+<!-- question editor sheet -->
+<div class="sheet" id="qSheet" role="dialog" aria-modal="true">
+  <div class="sheet-head">
+    <h2 id="qTitle">疑問文の問題を追加</h2><div class="spacer" style="flex:1"></div>
+    <button class="icon-btn" data-close>✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>素材の英文（ふつうの文）</label>
+      <textarea id="qBase" rows="2" placeholder="例）Tom went to Kyoto last summer."></textarea>
+    </div>
+    <div class="field">
+      <label>出題のタイプ</label>
+      <div class="kinds" id="qKinds"></div>
+    </div>
+    <div class="field" id="qTargetField">
+      <label>たずねる部分（素材文の中の語句をそのまま書く）</label>
+      <input class="txt" id="qTarget" placeholder="例）to Kyoto" autocomplete="off">
+      <div class="hint" id="qTargetHint" style="margin-top:6px">ここに下線が引かれます</div>
+    </div>
+    <div class="field">
+      <label>模範解答の疑問文（主語＝赤／動詞＝青）</label>
+      <div class="paint">
+        <button class="pbtn red" data-color="subj" data-for="qAns"><i class="sw"></i>主語</button>
+        <button class="pbtn blue" data-color="verb" data-for="qAns"><i class="sw"></i>動詞</button>
+        <button class="pbtn black" data-color="ink" data-for="qAns"><i class="sw"></i>黒</button>
+        <span class="hint">選択してから色をタップ</span>
+      </div>
+      <div class="editor" id="qAns" contenteditable="true" data-ph="Where did Tom go last summer?"></div>
+    </div>
+    <div class="field">
+      <label>答え方の例（任意）</label>
+      <input class="txt" id="qA" placeholder="He went to Kyoto." autocomplete="off">
+    </div>
+    <div class="field">
+      <label>タグ（任意・カンマ区切り）</label>
+      <input class="txt" id="qTags" placeholder="過去形, 中2" autocomplete="off">
+    </div>
+    <div class="field">
+      <label>解説メモ（任意）</label>
+      <input class="txt" id="qNote" placeholder="did のあとの動詞は原形にもどす など" autocomplete="off">
+    </div>
+    <div id="qHistBox" class="field hidden">
+      <label>練習の記録</label>
+      <div id="qHistText" class="hint" style="line-height:1.9"></div>
+    </div>
+  </div>
+  <div class="sheet-foot">
+    <button class="btn" data-close>キャンセル</button>
+    <button class="btn primary" id="qSave">保存</button>
   </div>
 </div>
 
@@ -331,7 +434,10 @@ const todayStr = () => new Date().toLocaleDateString('sv-SE'); // YYYY-MM-DD (lo
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 
 const clone = o => JSON.parse(JSON.stringify(o));
-const DEFAULT = { v: 1, items: [], days: {}, settings: { layout: 'stack', mask: false, sort: 'new', filter: 'all' } };
+const DEFAULT = {
+  v: 2, items: [], qitems: [], days: {},
+  settings: { layout: 'stack', mask: false, deck: 'w', sort: 'new', filter: 'all', qsort: 'new', qfilter: 'all' }
+};
 let DB = load();
 
 function load() {
@@ -339,9 +445,21 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return clone(DEFAULT);
     const d = JSON.parse(raw);
-    return Object.assign(clone(DEFAULT), d, { settings: Object.assign({}, DEFAULT.settings, d.settings || {}) });
+    const out = Object.assign(clone(DEFAULT), d, { settings: Object.assign({}, DEFAULT.settings, d.settings || {}) });
+    if (!Array.isArray(out.items)) out.items = [];
+    if (!Array.isArray(out.qitems)) out.qitems = [];   // v1 のデータには疑問文デッキが無い
+    out.v = DEFAULT.v;
+    return out;
   } catch (e) { return clone(DEFAULT); }
 }
+
+/* デッキ（⚡英作文 / ❓疑問文）。設定は並び順・絞り込みだけデッキ別に持つ */
+const isQ = () => DB.settings.deck === 'q';
+const deckItems = () => isQ() ? DB.qitems : DB.items;
+const getFilter = () => isQ() ? DB.settings.qfilter : DB.settings.filter;
+const setFilter = v => { if (isQ()) DB.settings.qfilter = v; else DB.settings.filter = v; };
+const getSort = () => isQ() ? DB.settings.qsort : DB.settings.sort;
+const setSort = v => { if (isQ()) DB.settings.qsort = v; else DB.settings.sort = v; };
 let saveTimer = null;
 function save() {
   clearTimeout(saveTimer);
@@ -355,8 +473,66 @@ function addItem(jp, en, tags = [], note = '') {
   const it = { id: uid(), jp: jp.trim(), en: en, tags, note, count: 0, last: null, hist: [], created: Date.now() };
   DB.items.unshift(it); save(); return it;
 }
-function getItem(id) { return DB.items.find(i => i.id === id); }
-function removeItem(id) { DB.items = DB.items.filter(i => i.id !== id); save(); }
+function getItem(id) { return DB.items.find(i => i.id === id) || DB.qitems.find(i => i.id === id); }
+function removeItem(id) {
+  DB.items = DB.items.filter(i => i.id !== id);
+  DB.qitems = DB.qitems.filter(i => i.id !== id);
+  save();
+}
+
+/* ---------- A-Q. 疑問文モードのデータ ---------- */
+const KINDS = [
+  { k: 'wh',       name: 'Wh疑問文',    cue: '下線部をたずねる疑問文に',        ph: 'Where did Tom go last summer?' },
+  { k: 'yesno',    name: 'Yes/No疑問文', cue: 'Yes / No で答える疑問文に',      ph: 'Does Yuki play the guitar?' },
+  { k: 'tag',      name: '付加疑問文',   cue: '付加疑問文に（〜だよね？）',      ph: "It's cold today, isn't it?" },
+  { k: 'neg',      name: '否定疑問文',   cue: '否定疑問文に（〜じゃないの？）',  ph: "Don't you like natto?" },
+  { k: 'choice',   name: '選択疑問文',   cue: '選択疑問文に（A か B か）',       ph: 'Do you want tea or coffee?' },
+  { k: 'indirect', name: '間接疑問文',   cue: '間接疑問文に（Do you know 〜?）', ph: 'Do you know where Ken lives?' }
+];
+const kindOf = k => KINDS.find(x => x.k === k) || KINDS[0];
+
+function addQ(o) {
+  const it = {
+    id: uid(), type: 'q',
+    base: (o.base || '').trim(),
+    target: (o.target || '').trim(),
+    kind: KINDS.some(x => x.k === o.kind) ? o.kind : 'wh',
+    q: o.q || '', a: (o.a || '').trim(),
+    tags: (o.tags || []).slice(), note: o.note || '',
+    count: 0, last: null, hist: [], created: Date.now()
+  };
+  DB.qitems.unshift(it); save(); return it;
+}
+
+/* 素材文の中の「たずねる部分」に下線を引く。esc 後の文字列どうしで探すのでズレない */
+function baseHTML(it) {
+  const b = esc(it.base || ''), t = esc((it.target || '').trim());
+  if (!t) return b;
+  const i = b.indexOf(t);
+  return i < 0 ? b : b.slice(0, i) + '<u class="tgt">' + t + '</u>' + b.slice(i + t.length);
+}
+function cueText(it) {
+  const kd = kindOf(it.kind);
+  if (it.kind === 'wh' && it.target) return `下線部「${it.target}」をたずねる`;
+  return kd.cue;
+}
+/* 模範解答の出だし（ヒント用）。疑問詞は2語まとめて見せる */
+function leadWords(html) {
+  const w = plain(html).split(/\s+/).filter(Boolean);
+  if (!w.length) return '';
+  const two = /^(how|what|which|whose|at|in|on|for|to|by|about|from)$/i.test(w[0].replace(/[^A-Za-z]/g, ''));
+  return w.slice(0, two && w.length > 1 ? 2 : 1).join(' ');
+}
+/* 模範解答から出題タイプを推測する（まとめて追加で使用） */
+function guessKind(qs) {
+  const s = plain(qs).trim(), l = s.toLowerCase();
+  if (/^(do you know|does anyone know|could you tell me|can you tell me|i wonder|do you remember)\b/.test(l)) return 'indirect';
+  if (/,\s*(is|are|was|were|do|does|did|can|could|will|would|should|has|have|had)\s*(n't)?\s+\w+\s*\?$/i.test(s)) return 'tag';
+  if (/\bor\b/.test(l)) return 'choice';
+  if (/^(don't|doesn't|didn't|isn't|aren't|wasn't|weren't|can't|couldn't|won't|wouldn't|shouldn't|haven't|hasn't|hadn't)\b/.test(l)) return 'neg';
+  if (/^(what|who|whose|which|where|when|why|how)\b/.test(l)) return 'wh';
+  return 'yesno';
+}
 
 function markDone(id) {
   const it = getItem(id); if (!it) return;
@@ -417,6 +593,76 @@ function nextGap(c) { const nx = LEVELS.find(x => x.min > c); return nx ? nx.min
 const isDue = it => it.count > 0 && daysAgo(it.last) >= 3;
 const doneToday = it => it.last === todayStr();
 
+/* ---------- A-Q2. お手本の問題（プリセット） ---------- */
+const PRESET_Q = [
+  {"base":"Tom is a soccer player.","target":"a soccer player","kind":"wh","q":"What is Tom?","a":"He is a soccer player.","note":"be動詞の疑問文は主語と be 動詞をひっくり返すだけ。職業や身分をたずねるときは What を使います。","tags":["Wh疑問文","be動詞"]},
+  {"base":"Mika lives in Osaka.","target":"in Osaka","kind":"wh","q":"Where does Mika live?","a":"She lives in Osaka.","note":"lives の s は does に移ります。does の後ろの動詞は必ず原形 live に戻しましょう。","tags":["Wh疑問文","三単現"]},
+  {"base":"Ken gets up at six every morning.","target":"at six","kind":"wh","q":"What time does Ken get up every morning?","a":"He gets up at six.","note":"時刻をたずねるときは What time。gets → does + 原形 get の形にします。","tags":["Wh疑問文","三単現"]},
+  {"base":"Yuki went to the library yesterday.","target":"to the library","kind":"wh","q":"Where did Yuki go yesterday?","a":"She went to the library.","note":"過去形 went は did に過去の意味を渡し、動詞は原形 go に戻します。","tags":["Wh疑問文","過去形"]},
+  {"base":"This bag is Mika's.","target":"Mika's","kind":"wh","q":"Whose bag is this?","a":"It is Mika's.","note":"持ち主をたずねるときは Whose + 名詞 を文の先頭にまとめて置きます。","tags":["Wh疑問文","be動詞"]},
+  {"base":"Tom has two dogs.","target":"two dogs","kind":"wh","q":"How many dogs does Tom have?","a":"He has two.","note":"数をたずねるときは How many + 複数名詞。has → does + 原形 have になります。","tags":["Wh疑問文","三単現"]},
+  {"base":"Ken is reading a comic book now.","target":"a comic book","kind":"wh","q":"What is Ken reading now?","a":"He is reading a comic book.","note":"進行形は be 動詞を主語の前に出すだけ。-ing はそのまま残します。","tags":["Wh疑問文","進行形"]},
+  {"base":"Mika was absent because she had a cold.","target":"because she had a cold","kind":"wh","q":"Why was Mika absent?","a":"Because she had a cold.","note":"理由をたずねるのは Why。答えは Because 〜 で返すのが自然です。","tags":["Wh疑問文","過去形"]},
+  {"base":"Yuki broke the window.","target":"Yuki","kind":"wh","q":"Who broke the window?","a":"Yuki did.","note":"疑問詞が主語になるパターンです。Who をそのまま主語の位置に置くだけで、did は使わず語順も変えません。","tags":["Wh疑問文","疑問詞が主語"]},
+  {"base":"That noise woke the baby.","target":"That noise","kind":"wh","q":"What woke the baby?","a":"That noise did.","note":"What が主語なので語順はそのまま。動詞は過去形 woke のままで、did は入れません。","tags":["Wh疑問文","疑問詞が主語"]},
+  {"base":"Ten students joined the club.","target":"Ten students","kind":"wh","q":"How many students joined the club?","a":"Ten students did.","note":"How many students が主語になるパターン。語順は平叙文のままで、動詞も joined のままです。","tags":["Wh疑問文","疑問詞が主語"]},
+  {"base":"Tom's sister lives in Canada.","target":"Tom's sister","kind":"wh","q":"Who lives in Canada?","a":"Tom's sister does.","note":"Who が主語なので does は使わず、動詞は三単現の lives のまま残します。","tags":["Wh疑問文","疑問詞が主語"]},
+  {"base":"Mika will visit her grandmother next Sunday.","target":"next Sunday","kind":"wh","q":"When will Mika visit her grandmother?","a":"Next Sunday.","note":"will の文は will を主語の前に出します。will の後ろは必ず原形 visit です。","tags":["Wh疑問文","未来"]},
+  {"base":"Ken is going to study math tonight.","target":"math","kind":"wh","q":"What is Ken going to study tonight?","a":"He is going to study math.","note":"be going to は be 動詞だけを前に出します。going to study の部分は動かしません。","tags":["Wh疑問文","未来"]},
+  {"base":"Yuki can play the piano very well.","target":"the piano","kind":"wh","q":"What can Yuki play very well?","a":"She can play the piano.","note":"助動詞 can は主語の前へ。can の後ろの動詞は原形 play のままです。","tags":["Wh疑問文","助動詞"]},
+  {"base":"Tom stayed in London for three weeks.","target":"for three weeks","kind":"wh","q":"How long did Tom stay in London?","a":"For three weeks.","note":"期間をたずねるのは How long。stayed → did + 原形 stay に戻します。","tags":["Wh疑問文","過去形"]},
+  {"base":"This T-shirt costs fifteen dollars.","target":"fifteen dollars","kind":"wh","q":"How much does this T-shirt cost?","a":"Fifteen dollars.","note":"値段をたずねるのは How much。costs の s は does に渡し、動詞は原形 cost にします。","tags":["Wh疑問文","三単現"]},
+  {"base":"Mika practices tennis three times a week.","target":"three times a week","kind":"wh","q":"How often does Mika practice tennis?","a":"Three times a week.","note":"頻度をたずねるのは How often。practices → does + 原形 practice です。","tags":["Wh疑問文","三単現"]},
+  {"base":"Ken came to school by bike.","target":"by bike","kind":"wh","q":"How did Ken come to school?","a":"By bike.","note":"手段をたずねるのは How。came → did + 原形 come に戻すのを忘れずに。","tags":["Wh疑問文","過去形"]},
+  {"base":"Yuki likes the blue one better.","target":"the blue one","kind":"wh","q":"Which one does Yuki like better?","a":"She likes the blue one.","note":"限られた選択肢から選ばせるときは Which。likes → does + 原形 like です。","tags":["Wh疑問文","三単現"]},
+  {"base":"Tom has lived in Japan for five years.","target":"for five years","kind":"wh","q":"How long has Tom lived in Japan?","a":"For five years.","note":"現在完了は has を主語の前に出すだけ。lived（過去分詞）はそのまま残します。","tags":["Wh疑問文","現在完了"]},
+  {"base":"Mika has already finished her homework.","target":"her homework","kind":"wh","q":"What has Mika already finished?","a":"Her homework.","note":"疑問詞 + has + 主語 + 過去分詞 の語順。already の位置は動かさなくて大丈夫です。","tags":["Wh疑問文","現在完了"]},
+  {"base":"This temple was built in 1650.","target":"in 1650","kind":"wh","q":"When was this temple built?","a":"It was built in 1650.","note":"受動態は be 動詞を主語の前に出します。過去分詞 built はそのままの位置です。","tags":["Wh疑問文","受動態"]},
+  {"base":"This song was written by Ken.","target":"by Ken","kind":"wh","q":"Who was this song written by?","a":"It was written by Ken.","note":"by 以下をたずねる受動態の疑問文。by を文末に残す形が会話では自然です（By whom 〜? は硬い言い方）。","tags":["Wh疑問文","受動態"]},
+  {"base":"There are twelve eggs in the box.","target":"twelve eggs","kind":"wh","q":"How many eggs are there in the box?","a":"There are twelve.","note":"there is / are 構文では are を there の前に出して How many 〜 are there? の形にします。","tags":["Wh疑問文","there is構文"]},
+  {"base":"Yuki must finish the report by Friday.","target":"by Friday","kind":"wh","q":"When must Yuki finish the report?","a":"By Friday.","note":"must も助動詞なので主語の前へ。後ろの動詞は原形 finish のままです。","tags":["Wh疑問文","助動詞"]},
+  {"base":"Tom was waiting for his friend at the station.","target":"for his friend","kind":"wh","q":"Who was Tom waiting for at the station?","a":"He was waiting for his friend.","note":"過去進行形は was を主語の前へ。前置詞 for は文中に残したまま Who を先頭に置きます。","tags":["Wh疑問文","進行形"]},
+  {"base":"Mika bought that dress at the new shop.","target":"at the new shop","kind":"wh","q":"Where did Mika buy that dress?","a":"At the new shop.","note":"bought → did + 原形 buy。過去形を原形に戻し忘れるミスが最も多いので注意しましょう。","tags":["Wh疑問文","過去形"]},
+  {"base":"Ken is from Australia.","target":"","kind":"yesno","q":"Is Ken from Australia?","a":"Yes, he is.","note":"be動詞の文は主語と be 動詞をひっくり返すだけで疑問文になります。","tags":["Yes/No疑問文","be動詞"]},
+  {"base":"Yuki plays the guitar.","target":"","kind":"yesno","q":"Does Yuki play the guitar?","a":"Yes, she does.","note":"三単現の s は does に移ります。does の後ろは原形 play です。","tags":["Yes/No疑問文","三単現"]},
+  {"base":"You like natto.","target":"","kind":"yesno","q":"Do you like natto?","a":"No, I don't.","note":"主語が you のときは Do を文頭に置くだけ。動詞はそのまま原形です。","tags":["Yes/No疑問文","一般動詞"]},
+  {"base":"Tom watched the game last night.","target":"","kind":"yesno","q":"Did Tom watch the game last night?","a":"Yes, he did.","note":"過去の文は Did を文頭に。watched は原形 watch に戻します。","tags":["Yes/No疑問文","過去形"]},
+  {"base":"Mika is cooking dinner now.","target":"","kind":"yesno","q":"Is Mika cooking dinner now?","a":"Yes, she is.","note":"進行形は be 動詞を先頭に出すだけ。cooking はそのままです。","tags":["Yes/No疑問文","進行形"]},
+  {"base":"Ken can swim fast.","target":"","kind":"yesno","q":"Can Ken swim fast?","a":"Yes, he can.","note":"助動詞 can を主語の前に出すだけ。動詞は原形 swim のままです。","tags":["Yes/No疑問文","助動詞"]},
+  {"base":"There is a post office near the station.","target":"","kind":"yesno","q":"Is there a post office near the station?","a":"Yes, there is.","note":"there is 構文は is を there の前に出します。答えも Yes, there is. の形で返します。","tags":["Yes/No疑問文","there is構文"]},
+  {"base":"Yuki will join the camp next month.","target":"","kind":"yesno","q":"Will Yuki join the camp next month?","a":"Yes, she will.","note":"will を主語の前に出すだけ。will の後ろは必ず原形 join です。","tags":["Yes/No疑問文","未来"]},
+  {"base":"Tom has visited Kyoto before.","target":"","kind":"yesno","q":"Has Tom visited Kyoto before?","a":"No, he hasn't.","note":"現在完了は has を主語の前へ。過去分詞 visited はそのまま残します。","tags":["Yes/No疑問文","現在完了"]},
+  {"base":"These rooms are cleaned every day.","target":"","kind":"yesno","q":"Are these rooms cleaned every day?","a":"Yes, they are.","note":"受動態は be 動詞を主語の前に出すだけ。過去分詞 cleaned は動かしません。","tags":["Yes/No疑問文","受動態"]},
+  {"base":"Mika is going to take the exam in June.","target":"","kind":"yesno","q":"Is Mika going to take the exam in June?","a":"Yes, she is.","note":"be going to の疑問文は be 動詞だけを前に出します。going to take はひとかたまりです。","tags":["Yes/No疑問文","未来"]},
+  {"base":"Ken should see a doctor today.","target":"","kind":"yesno","q":"Should Ken see a doctor today?","a":"Yes, he should.","note":"should も助動詞なので主語の前へ。後ろの動詞は原形 see のままです。","tags":["Yes/No疑問文","助動詞"]},
+  {"base":"It is sunny today.","target":"","kind":"tag","q":"It is sunny today, isn't it?","a":"Yes, it is.","note":"肯定文には否定の付加疑問をつけます。be 動詞 is を短縮して isn't it? とし、主語は代名詞にします。","tags":["付加疑問文","be動詞"]},
+  {"base":"Yuki likes chocolate.","target":"","kind":"tag","q":"Yuki likes chocolate, doesn't she?","a":"Yes, she does.","note":"一般動詞・三単現の文には doesn't を使い、主語 Yuki は代名詞 she に置きかえます。","tags":["付加疑問文","三単現"]},
+  {"base":"Tom didn't come to the party.","target":"","kind":"tag","q":"Tom didn't come to the party, did he?","a":"No, he didn't.","note":"否定文には肯定の付加疑問をつけます。didn't の文なので did he? となります。","tags":["付加疑問文","過去形"]},
+  {"base":"Mika can drive a car.","target":"","kind":"tag","q":"Mika can drive a car, can't she?","a":"Yes, she can.","note":"助動詞の文はその助動詞をそのまま使い、can't she? とします。","tags":["付加疑問文","助動詞"]},
+  {"base":"You have finished your lunch.","target":"","kind":"tag","q":"You have finished your lunch, haven't you?","a":"Yes, I have.","note":"現在完了の文では have を使って haven't you? とします。過去分詞は使いません。","tags":["付加疑問文","現在完了"]},
+  {"base":"There are some cookies on the plate.","target":"","kind":"tag","q":"There are some cookies on the plate, aren't there?","a":"Yes, there are.","note":"there is / are 構文の付加疑問では、主語の位置に there をそのまま使って aren't there? とします。","tags":["付加疑問文","there is構文"]},
+  {"base":"Ken will call us tonight.","target":"","kind":"tag","q":"Ken will call us tonight, won't he?","a":"Yes, he will.","note":"will の否定短縮形は won't。willn't とは言わないので注意しましょう。","tags":["付加疑問文","未来"]},
+  {"base":"You know Tom's phone number.","target":"","kind":"neg","q":"Don't you know Tom's phone number?","a":"No, I don't.","note":"否定疑問文は Don't を文頭に置きます。日本語の「知らないの？」に対し、知らないなら No で答える点に注意。","tags":["否定疑問文","一般動詞"]},
+  {"base":"Mika is your classmate.","target":"","kind":"neg","q":"Isn't Mika your classmate?","a":"Yes, she is.","note":"be動詞の否定疑問文は短縮形 Isn't を文頭に。答えが肯定内容なら Yes で返します。","tags":["否定疑問文","be動詞"]},
+  {"base":"Ken went home early.","target":"","kind":"neg","q":"Didn't Ken go home early?","a":"Yes, he did.","note":"Didn't を文頭に出したら、動詞は原形 go に戻します。went のままにしないこと。","tags":["否定疑問文","過去形"]},
+  {"base":"Yuki can come with us.","target":"","kind":"neg","q":"Can't Yuki come with us?","a":"No, she can't.","note":"助動詞の否定疑問文は Can't を文頭へ。後ろの動詞は原形 come のままです。","tags":["否定疑問文","助動詞"]},
+  {"base":"You have seen this movie.","target":"","kind":"neg","q":"Haven't you seen this movie?","a":"Yes, I have.","note":"現在完了の否定疑問文は Haven't を文頭に。過去分詞 seen はそのまま残します。","tags":["否定疑問文","現在完了"]},
+  {"base":"Tom is coming to the meeting.","target":"","kind":"neg","q":"Isn't Tom coming to the meeting?","a":"No, he isn't.","note":"進行形の否定疑問文も be 動詞の短縮形を文頭に置くだけ。coming は動かしません。","tags":["否定疑問文","進行形"]},
+  {"base":"Yuki likes coffee better than tea.","target":"","kind":"choice","q":"Does Yuki like coffee or tea?","a":"She likes coffee.","note":"選択疑問文は Yes/No 疑問文の形に A or B を入れます。答えは Yes/No ではなく選んだ方を言います。","tags":["選択疑問文","三単現"]},
+  {"base":"Tom is a doctor.","target":"","kind":"choice","q":"Is Tom a doctor or a teacher?","a":"He is a doctor.","note":"be動詞の選択疑問文。or の前を上げ調子、後ろを下げ調子で読むのがポイントです。","tags":["選択疑問文","be動詞"]},
+  {"base":"Mika went to the park by bus.","target":"","kind":"choice","q":"Did Mika go to the park by bus or by train?","a":"She went by bus.","note":"Did を文頭に出したら動詞は原形 go に。or の後ろも by train と形をそろえます。","tags":["選択疑問文","過去形"]},
+  {"base":"Ken will study English tonight.","target":"","kind":"choice","q":"Will Ken study English or math tonight?","a":"He will study English.","note":"will を文頭に出し、選ばせる2語を or でつなぎます。動詞は原形 study のままです。","tags":["選択疑問文","未来"]},
+  {"base":"This letter was written in English.","target":"","kind":"choice","q":"Was this letter written in English or in Japanese?","a":"It was written in English.","note":"受動態の選択疑問文。be 動詞を先頭に出し、or の前後は in 〜 の形をそろえます。","tags":["選択疑問文","受動態"]},
+  {"base":"Yuki wants to be a nurse.","target":"","kind":"choice","q":"Does Yuki want to be a nurse or a doctor?","a":"She wants to be a nurse.","note":"wants の s は Does に移して原形 want に。or の後ろは a doctor と冠詞まで合わせます。","tags":["選択疑問文","三単現"]},
+  {"base":"Tom lives near the park.","target":"","kind":"indirect","q":"Do you know where Tom lives?","a":"Yes, he lives near the park.","note":"間接疑問文では where の後ろが平叙文の語順（主語＋動詞）になります。does は使いません。","tags":["間接疑問文","三単現"]},
+  {"base":"The concert starts at seven.","target":"","kind":"indirect","q":"Do you know what time the concert starts?","a":"It starts at seven.","note":"what time の後ろも「主語＋動詞」の語順のまま。starts の s を落とさないよう注意します。","tags":["間接疑問文","三単現"]},
+  {"base":"Mika is waiting for someone.","target":"","kind":"indirect","q":"Could you tell me who Mika is waiting for?","a":"She is waiting for her brother.","note":"Could you tell me 〜? の後ろは疑問文の語順にせず、who Mika is waiting for と主語＋動詞の順に並べます。","tags":["間接疑問文","進行形"]},
+  {"base":"Ken will come to the party.","target":"","kind":"indirect","q":"Do you know if Ken will come to the party?","a":"Yes, he will.","note":"疑問詞がない内容は if / whether でつなぎます。後ろは平叙文の語順のままです。","tags":["間接疑問文","未来"]},
+  {"base":"Yuki bought that watch in Italy.","target":"","kind":"indirect","q":"Can you tell me where Yuki bought that watch?","a":"She bought it in Italy.","note":"Can you tell me 〜? の後ろは「疑問詞＋主語＋動詞」。did を入れず bought のままにします。","tags":["間接疑問文","過去形"]},
+  {"base":"That tall man is Tom's father.","target":"","kind":"indirect","q":"Do you know who that tall man is?","a":"He is Tom's father.","note":"間接疑問では be 動詞が文末にきます。who that tall man is の語順に慣れましょう。","tags":["間接疑問文","be動詞"]},
+  {"base":"The station has been closed since Monday.","target":"","kind":"indirect","q":"Do you know how long the station has been closed?","a":"Since Monday.","note":"how long の後ろも平叙文の語順。has been closed の並びは変えずにそのまま置きます。","tags":["間接疑問文","現在完了"]}
+];
+
 /* ---------- C. sanitize + editor ---------- */
 const COLORVAR = { subj: 'var(--subj)', verb: 'var(--verb)', ink: 'var(--ink)' };
 const COLORHEX = { subj: '#E0334B', verb: '#1B62D6', ink: '' };
@@ -455,18 +701,22 @@ function sanitize(html) {
 const plain = html => { const d = document.createElement('div'); d.innerHTML = html || ''; return (d.textContent || '').trim(); };
 
 const fEn = document.getElementById('fEn');
-let savedRange = null;
+let savedRange = null, activeEditor = null;
+const editorOf = n => { while (n) { if (n.nodeType === 1 && n.classList.contains('editor')) return n; n = n.parentNode; } return null; };
 document.addEventListener('selectionchange', () => {
   const s = window.getSelection();
-  if (s && s.rangeCount && fEn.contains(s.anchorNode)) savedRange = s.getRangeAt(0).cloneRange();
+  if (!s || !s.rangeCount) return;
+  const ed = editorOf(s.anchorNode);
+  if (ed) { activeEditor = ed; savedRange = s.getRangeAt(0).cloneRange(); }
 });
-function paint(kind) {
-  fEn.focus();
+function paint(kind, ed) {
+  ed = ed || activeEditor || fEn;
+  ed.focus();
   const sel = window.getSelection();
-  if (savedRange && (!sel.rangeCount || sel.isCollapsed || !fEn.contains(sel.anchorNode))) {
+  if (savedRange && activeEditor === ed && (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode))) {
     sel.removeAllRanges(); sel.addRange(savedRange);
   }
-  if (!sel.rangeCount || sel.isCollapsed) { toast('色をつけたい部分を選んでからタップ'); return; }
+  if (!sel.rangeCount || sel.isCollapsed || !ed.contains(sel.anchorNode)) { toast('色をつけたい部分を選んでからタップ'); return; }
   const range = sel.getRangeAt(0);
   const frag = range.extractContents();
   // 既存の色指定を一度はがす
@@ -480,31 +730,41 @@ function paint(kind) {
   range.insertNode(node);
   sel.removeAllRanges();
   const r = document.createRange();
-  r.selectNodeContents(node.nodeType === 1 ? node : fEn);
-  sel.addRange(r); savedRange = r.cloneRange();
-  fEn.normalize();
+  r.selectNodeContents(node.nodeType === 1 ? node : ed);
+  sel.addRange(r); savedRange = r.cloneRange(); activeEditor = ed;
+  ed.normalize();
 }
 document.querySelectorAll('.pbtn').forEach(b => {
+  const ed = document.getElementById(b.dataset.for) || fEn;
   b.addEventListener('pointerdown', e => e.preventDefault());
-  b.addEventListener('click', () => paint(b.dataset.color));
+  b.addEventListener('click', () => paint(b.dataset.color, ed));
 });
-fEn.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && ['1', '2', '3'].includes(e.key)) {
-    e.preventDefault(); paint({ '1': 'subj', '2': 'verb', '3': 'ink' }[e.key]);
-  }
-  if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') { e.preventDefault(); saveEditor(); }
-});
-fEn.addEventListener('paste', e => {
-  e.preventDefault();
-  const t = (e.clipboardData || window.clipboardData).getData('text/plain');
-  document.execCommand('insertText', false, t);
+document.querySelectorAll('.editor').forEach(ed => {
+  ed.addEventListener('keydown', e => {
+    if ((e.metaKey || e.ctrlKey) && ['1', '2', '3'].includes(e.key)) {
+      e.preventDefault(); paint({ '1': 'subj', '2': 'verb', '3': 'ink' }[e.key], ed);
+    }
+    if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+      e.preventDefault();
+      if (ed.closest('#qSheet')) saveQEditor(); else saveEditor();
+    }
+  });
+  ed.addEventListener('paste', e => {
+    e.preventDefault();
+    const t = (e.clipboardData || window.clipboardData).getData('text/plain');
+    document.execCommand('insertText', false, t);
+  });
 });
 
 /* ---------- B. shell / sheets ---------- */
 const $ = s => document.querySelector(s);
-const scrim = $('#scrim'), editSheet = $('#editSheet'), uiSheet = $('#uiSheet');
+const scrim = $('#scrim'), editSheet = $('#editSheet'), uiSheet = $('#uiSheet'), qSheet = $('#qSheet');
 function openSheet(el) { scrim.classList.add('open'); el.classList.add('open'); }
-function closeSheets() { scrim.classList.remove('open'); editSheet.classList.remove('open'); uiSheet.classList.remove('open'); }
+function closeSheets() {
+  scrim.classList.remove('open');
+  [editSheet, uiSheet, qSheet].forEach(s => s.classList.remove('open'));
+}
+const anySheetOpen = () => [editSheet, uiSheet, qSheet].some(s => s.classList.contains('open'));
 scrim.addEventListener('click', closeSheets);
 document.querySelectorAll('[data-close]').forEach(b => b.addEventListener('click', closeSheets));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeSheets(); });
@@ -548,22 +808,85 @@ function saveEditor() {
   closeSheets(); render();
 }
 $('#saveItem').addEventListener('click', saveEditor);
-$('#fab').addEventListener('click', () => openEditor(null));
+$('#fab').addEventListener('click', () => isQ() ? openQEditor(null) : openEditor(null));
+
+/* ---------- C-Q. 疑問文エディタ ---------- */
+const qAns = $('#qAns');
+let qEditingId = null, qEditKind = 'wh';
+
+function paintQKinds() {
+  $('#qKinds').innerHTML = KINDS.map(k =>
+    `<button class="kchip" data-k="${k.k}" aria-pressed="${qEditKind === k.k}">${esc(k.name)}</button>`).join('');
+  const wh = qEditKind === 'wh';
+  $('#qTargetField').classList.toggle('hidden', !wh);
+  qAns.dataset.ph = kindOf(qEditKind).ph;
+  $('#qTargetHint').textContent = wh ? '素材文と同じつづりで書くと、その部分に下線が引かれます' : '';
+}
+$('#qKinds').addEventListener('click', e => {
+  const b = e.target.closest('.kchip'); if (!b) return;
+  qEditKind = b.dataset.k; paintQKinds();
+});
+
+function openQEditor(id) {
+  qEditingId = id || null;
+  const it = id ? getItem(id) : null;
+  qEditKind = it ? it.kind : 'wh';
+  $('#qTitle').textContent = it ? '疑問文の問題を編集' : '疑問文の問題を追加';
+  $('#qBase').value = it ? it.base : '';
+  $('#qTarget').value = it ? (it.target || '') : '';
+  qAns.innerHTML = it ? it.q : '';
+  $('#qA').value = it ? (it.a || '') : '';
+  $('#qTags').value = it ? (it.tags || []).join(', ') : '';
+  $('#qNote').value = it ? (it.note || '') : '';
+  paintQKinds();
+  const hb = $('#qHistBox');
+  if (it && it.count) {
+    hb.classList.remove('hidden');
+    const lv = levelOf(it.count);
+    const recent = it.hist.slice(-8).reverse().map(d => relLabel(d)).join(' ・ ');
+    $('#qHistText').innerHTML = `${lv.icon} ${lv.name}／通算 ${it.count} 回<br>最近：${recent || '—'}`;
+  } else hb.classList.add('hidden');
+  openSheet(qSheet);
+  setTimeout(() => $('#qBase').focus(), 220);
+}
+function saveQEditor() {
+  const base = $('#qBase').value.trim();
+  const q = sanitize(qAns.innerHTML);
+  if (!base) { toast('素材の英文を入れてね'); return; }
+  if (!plain(q)) { toast('模範解答の疑問文を入れてね'); return; }
+  const target = qEditKind === 'wh' ? $('#qTarget').value.trim() : '';
+  const warn = target && !base.includes(target) ? '保存しました（「たずねる部分」が素材文に無いので下線は出ません）' : '';
+  const o = {
+    base, target, kind: qEditKind, q, a: $('#qA').value.trim(),
+    tags: $('#qTags').value.split(/[,、]/).map(s => s.trim()).filter(Boolean),
+    note: $('#qNote').value.trim()
+  };
+  if (qEditingId) { Object.assign(getItem(qEditingId), o); save(); toast(warn || '保存しました'); }
+  else { addQ(o); toast(warn || '追加しました'); }
+  closeSheets(); render();
+}
+$('#qSave').addEventListener('click', saveQEditor);
 
 /* ---------- B-2. list render ---------- */
 const listEl = $('#list');
 let shuffleSeed = Math.random();
 
+const searchText = i => (i.type === 'q'
+  ? [i.base, plain(i.q), i.a, kindOf(i.kind).name, i.target]
+  : [i.jp, plain(i.en)]
+).concat((i.tags || []).join(' '), i.note || '').join(' ');
+
 function currentSet() {
   const q = $('#q').value.trim().toLowerCase();
-  const f = DB.settings.filter;
-  let arr = DB.items.slice();
-  if (q) arr = arr.filter(i => (i.jp + ' ' + plain(i.en) + ' ' + (i.tags || []).join(' ') + ' ' + (i.note || '')).toLowerCase().includes(q));
+  const f = getFilter();
+  let arr = deckItems().slice();
+  if (q) arr = arr.filter(i => searchText(i).toLowerCase().includes(q));
   if (f === 'todo') arr = arr.filter(i => !doneToday(i));
   else if (f === 'due') arr = arr.filter(i => isDue(i));
   else if (f === 'new') arr = arr.filter(i => !i.count);
+  else if (f && f.startsWith('kind:')) { const k = f.slice(5); arr = arr.filter(i => i.kind === k); }
   else if (f && f.startsWith('tag:')) { const t = f.slice(4); arr = arr.filter(i => (i.tags || []).includes(t)); }
-  const s = DB.settings.sort;
+  const s = getSort();
   if (s === 'new') arr.sort((a, b) => b.created - a.created);
   else if (s === 'old') arr.sort((a, b) => a.created - b.created);
   else if (s === 'weak') arr.sort((a, b) => a.count - b.count || a.created - b.created);
@@ -572,26 +895,46 @@ function currentSet() {
   return arr;
 }
 
-function cardHTML(it) {
-  const lv = levelOf(it.count);
-  const done = doneToday(it), due = isDue(it);
-  const cls = ['card', done ? '' : (due ? 'due' : (it.count ? '' : 'new'))].join(' ');
+/* カード下部の共通メタ行 */
+function metaHTML(it) {
+  const lv = levelOf(it.count), done = doneToday(it), due = isDue(it);
   const last = `<span class="last ${done ? 'hot' : (due ? 'due' : '')}">${it.count ? '最終 ' + relLabel(it.last) : '未練習'}</span>`;
-  const dots = weekDots(it);
   const tags = (it.tags || []).map(t => `<span class="tag">#${esc(t)}</span>`).join('');
-  return `<article class="${cls} ${DB.settings.mask ? 'masked' : ''}" data-id="${it.id}">
-    <div class="pair">
-      <div class="jp">${esc(it.jp) || '<span style="color:var(--ink-3)">（日本語なし）</span>'}</div>
-      <div class="en">${it.en || ''}</div>
-    </div>
-    <div class="meta">
+  return `<div class="meta">
       <span class="badge ${lv.cls}">${lv.icon} ${lv.name}<span style="opacity:.6">×${it.count}</span></span>
-      ${last}${dots}${tags}
+      ${last}${weekDots(it)}${tags}
       <span class="card-actions">
         <button class="more" data-act="more">⋯</button>
         <button class="did ${done ? 'done' : ''}" data-act="did">${done ? '✓ 今日OK' : '⚡ できた'}</button>
       </span>
+    </div>`;
+}
+const cardCls = it => {
+  const done = doneToday(it), due = isDue(it);
+  return ['card', done ? '' : (due ? 'due' : (it.count ? '' : 'new')), DB.settings.mask ? 'masked' : ''].join(' ');
+};
+
+function cardHTML(it) {
+  return `<article class="${cardCls(it)}" data-id="${it.id}">
+    <div class="pair">
+      <div class="jp">${esc(it.jp) || '<span style="color:var(--ink-3)">（日本語なし）</span>'}</div>
+      <div class="en">${it.en || ''}</div>
     </div>
+    ${metaHTML(it)}
+  </article>`;
+}
+
+function qCardHTML(it) {
+  const kd = kindOf(it.kind);
+  return `<article class="${cardCls(it)} qcard-item" data-id="${it.id}">
+    <div class="qbase">${baseHTML(it)}</div>
+    <div class="cue-row">
+      <span class="cue ${kd.k}">${esc(kd.name)}</span>
+      <span class="cue-txt">${esc(cueText(it))}</span>
+    </div>
+    <div class="qans">${it.q || ''}</div>
+    <div class="qa">${esc(it.a || '')}</div>
+    ${metaHTML(it)}
   </article>`;
 }
 function weekDots(it) {
@@ -606,38 +949,67 @@ function weekDots(it) {
 const esc = s => (s || '').replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 
 function renderFilters() {
+  const src = deckItems(), cur = getFilter();
   const tagSet = new Map();
-  DB.items.forEach(i => (i.tags || []).forEach(t => tagSet.set(t, (tagSet.get(t) || 0) + 1)));
-  const base = [
-    ['all', 'すべて', DB.items.length],
-    ['todo', '今日まだ', DB.items.filter(i => !doneToday(i)).length],
-    ['due', '復習おすすめ', DB.items.filter(isDue).length],
-    ['new', '未練習', DB.items.filter(i => !i.count).length]
+  src.forEach(i => (i.tags || []).forEach(t => tagSet.set(t, (tagSet.get(t) || 0) + 1)));
+  let base = [
+    ['all', 'すべて', src.length],
+    ['todo', '今日まだ', src.filter(i => !doneToday(i)).length],
+    ['due', '復習おすすめ', src.filter(isDue).length],
+    ['new', '未練習', src.filter(i => !i.count).length]
   ];
+  if (isQ()) base = base.concat(
+    KINDS.map(k => ['kind:' + k.k, k.name, src.filter(i => i.kind === k.k).length]).filter(x => x[2])
+  );
   const tags = [...tagSet.entries()].sort((a, b) => b[1] - a[1]).map(([t, n]) => ['tag:' + t, '#' + t, n]);
   $('#filters').innerHTML = base.concat(tags).map(([k, label, n]) =>
-    `<button class="chip" data-f="${esc(k)}" aria-pressed="${DB.settings.filter === k}">${esc(label)}<span class="n">${n}</span></button>`).join('');
+    `<button class="chip" data-f="${esc(k)}" aria-pressed="${cur === k}">${esc(label)}<span class="n">${n}</span></button>`).join('');
 }
 
 function renderStats() {
   $('#sToday').textContent = DB.days[todayStr()] || 0;
   $('#sStreak').textContent = streak();
-  $('#sTotal').textContent = DB.items.reduce((a, b) => a + b.count, 0);
-  $('#sCount').textContent = DB.items.length;
+  $('#sTotal').textContent = DB.items.concat(DB.qitems).reduce((a, b) => a + b.count, 0);
+  $('#sCount').textContent = deckItems().length;
+  $('#sCountLabel').textContent = isQ() ? '問題の数' : '文の数';
 }
 
 function render() {
   renderStats(); renderFilters();
-  listEl.className = 'list ' + DB.settings.layout;
+  listEl.className = 'list ' + (isQ() ? 'stack' : DB.settings.layout);
   const arr = currentSet();
   if (!arr.length) {
-    listEl.innerHTML = DB.items.length
-      ? `<div class="empty"><div class="big">🔍</div><b>該当する文がありません</b>条件を変えてみてください</div>`
+    const empty = isQ()
+      ? `<div class="empty"><div class="big">❓</div><b>疑問文の問題を入れよう</b>メニュー →「お手本の問題を入れる」で<br>66問すぐに始められます。<br>右下の「＋ 問題を追加」で自分でも作れます。</div>`
       : `<div class="empty"><div class="big">⚡</div><b>まずは1文つくろう</b>右下の「＋ 文を追加」から。<br>メニュー →「まとめて追加」で一気に登録もできます。</div>`;
+    listEl.innerHTML = deckItems().length
+      ? `<div class="empty"><div class="big">🔍</div><b>該当する${isQ() ? '問題' : '文'}がありません</b>条件を変えてみてください</div>`
+      : empty;
     return;
   }
-  listEl.innerHTML = arr.map(cardHTML).join('');
+  listEl.innerHTML = arr.map(isQ() ? qCardHTML : cardHTML).join('');
 }
+
+/* ---------- B-Q. デッキ切替 ---------- */
+function setDeck(d) {
+  if (DB.settings.deck === d) return;
+  DB.settings.deck = d; save();
+  drill = null;
+  paintDeck();
+  if ($('#viewDrill').classList.contains('hidden')) render(); else renderDrill();
+}
+function paintDeck() {
+  const q = isQ();
+  $('#deck').querySelectorAll('[data-deck]').forEach(b => b.setAttribute('aria-pressed', b.dataset.deck === DB.settings.deck));
+  $('#fab').textContent = q ? '＋ 問題を追加' : '＋ 文を追加';
+  $('#q').placeholder = q ? '英文・疑問文・タグで検索' : '日本語・英語・タグで検索';
+  $('#sort').value = getSort();
+  $('#btnLayout').classList.toggle('hidden', q);   // 疑問文カードは上下表示のみ
+}
+$('#deck').addEventListener('click', e => {
+  const b = e.target.closest('[data-deck]'); if (!b) return;
+  setDeck(b.dataset.deck);
+});
 
 listEl.addEventListener('click', e => {
   const card = e.target.closest('.card'); if (!card) return;
@@ -654,10 +1026,10 @@ listEl.addEventListener('click', e => {
 });
 
 $('#q').addEventListener('input', render);
-$('#sort').addEventListener('change', e => { DB.settings.sort = e.target.value; save(); render(); });
+$('#sort').addEventListener('change', e => { setSort(e.target.value); save(); render(); });
 $('#filters').addEventListener('click', e => {
   const c = e.target.closest('.chip'); if (!c) return;
-  DB.settings.filter = c.dataset.f; save(); render();
+  setFilter(c.dataset.f); save(); render();
 });
 $('#btnLayout').addEventListener('click', () => {
   DB.settings.layout = DB.settings.layout === 'stack' ? 'side' : 'stack'; save(); render();
@@ -669,10 +1041,11 @@ function showUI(title, html) { $('#uiTitle').textContent = title; $('#uiBody').o
 
 function itemMenu(id) {
   const it = getItem(id);
-  showUI('この文', `<div class="menu">
+  const q = it.type === 'q';
+  showUI(q ? 'この問題' : 'この文', `<div class="menu">
     <button data-m="edit">✏️ 編集する</button>
     <button data-m="dup">⧉ 複製する</button>
-    <button data-m="copy">📋 英文をコピー</button>
+    <button data-m="copy">📋 ${q ? '疑問文' : '英文'}をコピー</button>
     <div class="sep"></div>
     <div class="ttl">キロク</div>
     <button data-m="reset">↺ 回数をリセット<span class="switch">${it.count}回</span></button>
@@ -681,19 +1054,21 @@ function itemMenu(id) {
   </div>`);
   $('#uiBody').onclick = e => {
     const m = e.target.closest('[data-m]')?.dataset.m; if (!m) return;
-    if (m === 'edit') { closeSheets(); setTimeout(() => openEditor(id), 180); }
-    if (m === 'dup') { const n = addItem(it.jp, it.en, it.tags, it.note); closeSheets(); render(); toast('複製しました'); }
-    if (m === 'copy') { navigator.clipboard?.writeText(plain(it.en)); closeSheets(); toast('コピーしました'); }
+    if (m === 'edit') { closeSheets(); setTimeout(() => q ? openQEditor(id) : openEditor(id), 180); }
+    if (m === 'dup') { q ? addQ(it) : addItem(it.jp, it.en, it.tags, it.note); closeSheets(); render(); toast('複製しました'); }
+    if (m === 'copy') { navigator.clipboard?.writeText(plain(q ? it.q : it.en)); closeSheets(); toast('コピーしました'); }
     if (m === 'reset') { it.count = 0; it.last = null; it.hist = []; save(); closeSheets(); render(); toast('リセットしました'); }
-    if (m === 'del') { if (confirm('この文を削除しますか？')) { removeItem(id); closeSheets(); render(); toast('削除しました'); } }
+    if (m === 'del') { if (confirm(`この${q ? '問題' : '文'}を削除しますか？`)) { removeItem(id); closeSheets(); render(); toast('削除しました'); } }
   };
 }
 
 $('#btnMenu').addEventListener('click', () => {
   showUI('メニュー', `<div class="menu">
+    <div class="ttl">${isQ() ? '❓ 疑問文モード' : '⚡ 英作文モード'}</div>
     <button data-m="bulk">📥 まとめて追加</button>
-    <button data-m="mask">🙈 リストで英文を隠す<span class="switch">${DB.settings.mask ? 'ON' : 'OFF'}</span></button>
-    <button data-m="layout">▤ 表示：${DB.settings.layout === 'side' ? '横ならび' : '上下'}</button>
+    ${isQ() ? `<button data-m="preset">📚 お手本の問題を入れる<span class="switch">${PRESET_Q.length}問</span></button>` : ''}
+    <button data-m="mask">🙈 リストで${isQ() ? '模範解答' : '英文'}を隠す<span class="switch">${DB.settings.mask ? 'ON' : 'OFF'}</span></button>
+    ${isQ() ? '' : `<button data-m="layout">▤ 表示：${DB.settings.layout === 'side' ? '横ならび' : '上下'}</button>`}
     <div class="sep"></div>
     <div class="ttl">データ</div>
     <button data-m="export">⬇️ バックアップを書き出す</button>
@@ -705,14 +1080,15 @@ $('#btnMenu').addEventListener('click', () => {
   </div>`);
   $('#uiBody').onclick = e => {
     const m = e.target.closest('[data-m]')?.dataset.m; if (!m) return;
-    if (m === 'bulk') return bulkUI();
-    if (m === 'mask') { DB.settings.mask = !DB.settings.mask; save(); render(); closeSheets(); toast(DB.settings.mask ? '英文を隠しました（タップで表示）' : '英文を表示します'); }
+    if (m === 'bulk') return isQ() ? qBulkUI() : bulkUI();
+    if (m === 'preset') return loadPreset();
+    if (m === 'mask') { DB.settings.mask = !DB.settings.mask; save(); render(); closeSheets(); toast(DB.settings.mask ? '隠しました（タップで表示）' : '表示します'); }
     if (m === 'layout') { DB.settings.layout = DB.settings.layout === 'stack' ? 'side' : 'stack'; save(); render(); closeSheets(); }
     if (m === 'export') doExport();
     if (m === 'import') doImport();
     if (m === 'csv') doText();
     if (m === 'help') return helpUI();
-    if (m === 'wipe') { if (confirm('すべての文と記録を削除します。よろしいですか？')) { DB = clone(DEFAULT); save(); closeSheets(); render(); toast('初期化しました'); } }
+    if (m === 'wipe') { if (confirm('すべての文・問題と記録を削除します。よろしいですか？')) { DB = clone(DEFAULT); save(); closeSheets(); paintDeck(); render(); toast('初期化しました'); } }
   };
 });
 
@@ -721,6 +1097,16 @@ function helpUI() {
     <b style="color:var(--ink)">基本</b><br>
     日本語を見て、声に出して英語を言う → 言えたら「⚡ できた」。<br>
     それだけで回数・日付・バッジが記録されます。<br><br>
+    <b style="color:var(--ink)">2つのモード</b><br>
+    画面上の切替で <b>⚡ 英作文</b>／<b>❓ 疑問文</b> を行き来できます。<br>
+    <b>❓ 疑問文モード</b>は「英文を見て、それに対する疑問文を作る」練習。<br>
+    ・素材の英文＋「どう聞くか」の指示が出ます<br>
+    ・<span style="color:var(--subj);font-weight:700">赤い下線</span>の部分が「たずねる対象（＝答えにあたる部分）」<br>
+    ・声に出して疑問文を言ってから「答えを見る」<br>
+    ・詰まったら「💡 出だし」で最初の1〜2語だけ見られます<br>
+    タイプは Wh疑問文／Yes・No疑問文／付加疑問文／否定疑問文／選択疑問文／間接疑問文の6種類。<br>
+    メニューの「📚 お手本の問題を入れる」で ${PRESET_Q.length} 問すぐ入ります。<br>
+    記録・バッジ・連続日数は2つのモードで共通です。<br><br>
     <b style="color:var(--ink)">色</b><br>
     編集画面で英文の一部を選んで <span style="color:var(--subj);font-weight:700">主語</span>／<span style="color:var(--verb);font-weight:700">動詞</span>／黒 をタップ。<br>
     Macなら ⌘1（赤）・⌘2（青）・⌘3（黒）、⌘Enter で保存。<br><br>
@@ -762,6 +1148,61 @@ function bulkUI() {
     closeSheets(); render(); toast(n + ' 文を追加しました');
   };
 }
+/* 疑問文モードのまとめて追加 */
+function qBulkUI() {
+  let kind = 'auto';
+  showUI('まとめて追加（疑問文）', `<div class="sheet-body">
+    <div class="field">
+      <label>1行に1問。「素材文 ｜ 模範解答の疑問文 ｜ たずねる部分 ｜ 答え方の例」</label>
+      <textarea id="qbulkT" rows="8" placeholder="Tom went to Kyoto last summer. | Where did Tom go last summer? | to Kyoto | He went to Kyoto.
+Yuki plays the guitar. | Does Yuki play the guitar?"></textarea>
+    </div>
+    <div class="field">
+      <label>出題タイプ</label>
+      <div class="kinds" id="qbulkKinds">
+        <button class="kchip" data-k="auto" aria-pressed="true">自動でみわける</button>
+        ${KINDS.map(k => `<button class="kchip" data-k="${k.k}" aria-pressed="false">${esc(k.name)}</button>`).join('')}
+      </div>
+    </div>
+    <div class="field">
+      <label>共通タグ（任意）</label>
+      <input class="txt" id="qbulkTag" placeholder="中2, 過去形">
+    </div>
+    <div class="hint">※ 3つ目・4つ目は省略できます。「自動でみわける」は模範解答の形からタイプを推測します。</div>
+  </div>
+  <div class="sheet-foot"><button class="btn" data-close>やめる</button><button class="btn primary" id="qbulkGo">追加する</button></div>`);
+  $('#uiBody').querySelectorAll('[data-close]').forEach(b => b.onclick = closeSheets);
+  $('#qbulkKinds').onclick = e => {
+    const b = e.target.closest('.kchip'); if (!b) return;
+    kind = b.dataset.k;
+    $('#qbulkKinds').querySelectorAll('.kchip').forEach(x => x.setAttribute('aria-pressed', x.dataset.k === kind));
+  };
+  $('#qbulkGo').onclick = () => {
+    const tags = $('#qbulkTag').value.split(/[,、]/).map(s => s.trim()).filter(Boolean);
+    const lines = $('#qbulkT').value.split('\n').map(s => s.trim()).filter(Boolean);
+    let n = 0;
+    lines.forEach(line => {
+      const p = line.split(/\t|\s*[|｜]\s*/);
+      const base = (p[0] || '').trim(), qs = (p[1] || '').trim();
+      if (!base || !qs) return;
+      addQ({ base, q: esc(qs), target: (p[2] || '').trim(), a: (p[3] || '').trim(), tags, kind: kind === 'auto' ? guessKind(qs) : kind });
+      n++;
+    });
+    closeSheets(); render();
+    toast(n ? n + ' 問を追加しました' : '追加できる行がありませんでした');
+  };
+}
+
+/* お手本の問題（プリセット）を読み込む。素材文が同じものは飛ばす */
+function loadPreset() {
+  const have = new Set(DB.qitems.map(i => i.base));
+  const fresh = PRESET_Q.filter(p => !have.has(p.base));
+  if (!fresh.length) { closeSheets(); toast('お手本の問題はすべて入っています'); return; }
+  if (!confirm(`お手本の問題を ${fresh.length} 問追加します。よろしいですか？`)) return;
+  fresh.slice().reverse().forEach(p => addQ({ ...p, q: esc(p.q) }));
+  closeSheets(); render(); toast(fresh.length + ' 問を追加しました');
+}
+
 function doExport() {
   const blob = new Blob([JSON.stringify(DB, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
@@ -771,7 +1212,9 @@ function doExport() {
   closeSheets(); toast('バックアップを書き出しました');
 }
 function doText() {
-  const txt = DB.items.map(i => `${i.jp}\t${plain(i.en)}`).join('\n');
+  const txt = isQ()
+    ? DB.qitems.map(i => [i.base, plain(i.q), i.target || '', i.a || ''].join('\t')).join('\n')
+    : DB.items.map(i => `${i.jp}\t${plain(i.en)}`).join('\n');
   const blob = new Blob([txt], { type: 'text/plain' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = `瞬間英作文_${todayStr()}.txt`;
@@ -787,16 +1230,19 @@ function doImport() {
     r.onload = () => {
       try {
         const d = JSON.parse(r.result);
-        if (!d.items) throw 0;
+        if (!d.items && !d.qitems) throw 0;
         const mode = confirm('OK＝今のデータに追加 ／ キャンセル＝すべて置きかえ');
         if (mode) {
-          const ids = new Set(DB.items.map(i => i.id));
-          d.items.forEach(i => { if (ids.has(i.id)) i.id = uid(); DB.items.unshift(i); });
+          const ids = new Set(DB.items.concat(DB.qitems).map(i => i.id));
+          (d.items || []).forEach(i => { if (ids.has(i.id)) i.id = uid(); DB.items.unshift(i); });
+          (d.qitems || []).forEach(i => { if (ids.has(i.id)) i.id = uid(); i.type = 'q'; DB.qitems.unshift(i); });
           Object.entries(d.days || {}).forEach(([k, v]) => DB.days[k] = (DB.days[k] || 0) + v);
         } else {
           DB = Object.assign(clone(DEFAULT), d, { settings: Object.assign({}, DEFAULT.settings, d.settings || {}) });
+          if (!Array.isArray(DB.items)) DB.items = [];
+          if (!Array.isArray(DB.qitems)) DB.qitems = [];
         }
-        save(); closeSheets(); render(); toast('読み込みました');
+        save(); closeSheets(); paintDeck(); render(); toast('読み込みました');
       } catch (e) { toast('読み込めませんでした'); }
     };
     r.readAsText(f);
@@ -807,20 +1253,24 @@ function doImport() {
 /* ---------- D-2. practice mode ---------- */
 let drill = null;
 function startDrill(opts) {
+  const q = isQ();
   let arr = currentSet();
   if (opts.only === 'todo') arr = arr.filter(i => !doneToday(i));
   if (opts.only === 'due') arr = arr.filter(i => isDue(i) || !i.count);
+  if (q && opts.kind && opts.kind !== 'all') arr = arr.filter(i => i.kind === opts.kind);
   if (opts.order === 'rand') arr = arr.sort(() => Math.random() - .5);
   if (opts.order === 'weak') arr = arr.sort((a, b) => a.count - b.count);
-  if (!arr.length) { toast('対象の文がありません'); return; }
-  drill = { queue: arr.map(i => i.id), i: 0, ok: 0, again: 0, shown: false, dir: opts.dir };
+  if (!arr.length) { toast(q ? '対象の問題がありません' : '対象の文がありません'); return; }
+  drill = { queue: arr.map(i => i.id), i: 0, ok: 0, again: 0, shown: false, hint: false, deck: DB.settings.deck, dir: opts.dir };
   renderDrill();
 }
 function renderDrill() {
   const el = $('#drillArea');
+  const q = isQ();
+  if (drill && drill.deck !== DB.settings.deck) drill = null;   // デッキを切り替えたら中断
   if (!drill) {
     el.innerHTML = `<div class="qcard" style="min-height:auto;gap:14px">
-      <div style="font-size:15px;font-weight:700">練習の設定</div>
+      <div style="font-size:15px;font-weight:700">${q ? '疑問文の練習' : '練習の設定'}</div>
       <div class="field"><label>対象</label>
         <div class="row">
           <button class="btn" data-o="only:all">すべて</button>
@@ -833,23 +1283,33 @@ function renderDrill() {
           <button class="btn" data-o="order:rand">シャッフル</button>
           <button class="btn" data-o="order:weak">苦手順</button>
         </div><div class="hint" id="oOrder" style="margin-top:6px"></div></div>
-      <div class="field"><label>出す方向</label>
+      ${q ? `<div class="field"><label>出題タイプ</label>
+        <div class="kinds">
+          <button class="kchip" data-o="kind:all">すべて</button>
+          ${KINDS.map(k => `<button class="kchip" data-o="kind:${k.k}">${esc(k.name)}</button>`).join('')}
+        </div><div class="hint" id="oKind" style="margin-top:6px"></div></div>`
+      : `<div class="field"><label>出す方向</label>
         <div class="row">
           <button class="btn" data-o="dir:jp2en">日本語 → 英語</button>
           <button class="btn" data-o="dir:en2jp">英語 → 日本語</button>
-        </div><div class="hint" id="oDir" style="margin-top:6px"></div></div>
+        </div><div class="hint" id="oDir" style="margin-top:6px"></div></div>`}
       <button class="btn primary" id="goDrill" style="padding:15px">⚡ 開始する</button>
     </div>
     <div class="hint" style="text-align:center;margin-top:14px">リストの検索・フィルタもそのまま反映されます</div>`;
-    const opt = window.__drillOpt = window.__drillOpt || { only: 'all', order: 'list', dir: 'jp2en' };
+    const opt = q
+      ? (window.__qDrillOpt = window.__qDrillOpt || { only: 'all', order: 'list', kind: 'all' })
+      : (window.__drillOpt = window.__drillOpt || { only: 'all', order: 'list', dir: 'jp2en' });
+    const unit = q ? '問題' : '文';
     const paintOpt = () => {
       el.querySelectorAll('[data-o]').forEach(b => {
         const [k, v] = b.dataset.o.split(':');
-        b.classList.toggle('primary', opt[k] === v);
+        if (b.classList.contains('kchip')) b.setAttribute('aria-pressed', opt[k] === v);
+        else b.classList.toggle('primary', opt[k] === v);
       });
-      $('#oOnly').textContent = { all: '登録した全部から', todo: '今日まだやっていない文だけ', due: '3日以上あいた文＋未練習の文' }[opt.only];
-      $('#oOrder').textContent = { list: 'リストの並び順のまま', rand: '毎回ランダム', weak: '回数の少ない文から' }[opt.order];
-      $('#oDir').textContent = { jp2en: '日本語を見て英語を言う（基本）', en2jp: '英語を見て意味を言う' }[opt.dir];
+      $('#oOnly').textContent = { all: '登録した全部から', todo: `今日まだやっていない${unit}だけ`, due: `3日以上あいた${unit}＋未練習の${unit}` }[opt.only];
+      $('#oOrder').textContent = { list: 'リストの並び順のまま', rand: '毎回ランダム', weak: `回数の少ない${unit}から` }[opt.order];
+      if (q) $('#oKind').textContent = opt.kind === 'all' ? '6タイプすべてまぜて出す' : kindOf(opt.kind).cue;
+      else $('#oDir').textContent = { jp2en: '日本語を見て英語を言う（基本）', en2jp: '英語を見て意味を言う' }[opt.dir];
     };
     el.querySelectorAll('[data-o]').forEach(b => b.onclick = () => { const [k, v] = b.dataset.o.split(':'); opt[k] = v; paintOpt(); });
     paintOpt();
@@ -860,27 +1320,45 @@ function renderDrill() {
     const total = drill.ok + drill.again;
     el.innerHTML = `<div class="result">
       <div class="big">${drill.again === 0 ? '👑' : (drill.ok >= drill.again ? '⚡' : '🌱')}</div>
-      <h3>${drill.ok} 文クリア</h3>
-      <p>もう一回：${drill.again} 文／全 ${total} 文<br>今日の合計 ${DB.days[todayStr()] || 0} 回・連続 ${streak()} 日</p>
+      <h3>${drill.ok} ${q ? '問' : '文'}クリア</h3>
+      <p>もう一回：${drill.again} ${q ? '問' : '文'}／全 ${total} ${q ? '問' : '文'}<br>今日の合計 ${DB.days[todayStr()] || 0} 回・連続 ${streak()} 日</p>
       <div class="row" style="max-width:400px;margin:0 auto">
         <button class="btn" id="drillAgain">もう一周</button>
         <button class="btn primary" id="drillEnd">終わる</button>
       </div></div>`;
-    $('#drillAgain').onclick = () => { const o = window.__drillOpt; drill = null; startDrill(o); };
+    $('#drillAgain').onclick = () => { const o = q ? window.__qDrillOpt : window.__drillOpt; drill = null; startDrill(o); };
     $('#drillEnd').onclick = () => { drill = null; renderDrill(); render(); };
     return;
   }
   const it = getItem(drill.queue[drill.i]);
   if (!it) { drill.i++; return renderDrill(); }
   const lv = levelOf(it.count);
-  const front = drill.dir === 'en2jp' ? `<div class="q-jp" style="font-family:var(--en)">${it.en || ''}</div>` : `<div class="q-jp">${esc(it.jp)}</div>`;
-  const back = drill.dir === 'en2jp' ? `<div class="q-en" style="font-family:var(--jp);font-weight:600">${esc(it.jp)}</div>` : `<div class="q-en">${it.en || ''}</div>`;
+  let body;
+  if (q) {
+    const kd = kindOf(it.kind);
+    body = `<div class="q-base">${baseHTML(it)}</div>
+      <div class="cue-row">
+        <span class="cue ${kd.k}">${esc(kd.name)}</span>
+        <span class="cue-txt">${esc(cueText(it))}</span>
+      </div>
+      ${drill.shown
+        ? `<div class="q-ans">${it.q || ''}</div>${it.a ? `<div class="q-a">${esc(it.a)}</div>` : ''}`
+        : `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+             <button class="reveal-btn" id="reveal">答えを見る</button>
+             ${drill.hint
+               ? `<span class="hintword">${esc(leadWords(it.q))} …</span>`
+               : `<button class="hintbtn" id="hintBtn">💡 出だし</button>`}
+           </div>`}`;
+  } else {
+    const front = drill.dir === 'en2jp' ? `<div class="q-jp" style="font-family:var(--en)">${it.en || ''}</div>` : `<div class="q-jp">${esc(it.jp)}</div>`;
+    const back = drill.dir === 'en2jp' ? `<div class="q-en" style="font-family:var(--jp);font-weight:600">${esc(it.jp)}</div>` : `<div class="q-en">${it.en || ''}</div>`;
+    body = front + (drill.shown ? back : `<button class="reveal-btn" id="reveal">答えを見る</button>`);
+  }
   el.innerHTML = `
     <div class="pcount"><span>${drill.i + 1} / ${drill.queue.length}</span><span>✓ ${drill.ok}　↺ ${drill.again}</span></div>
     <div class="progress"><i style="width:${(drill.i / drill.queue.length) * 100}%"></i></div>
     <div class="qcard">
-      ${front}
-      ${drill.shown ? back : `<button class="reveal-btn" id="reveal">答えを見る</button>`}
+      ${body}
       ${it.note && drill.shown ? `<div class="hint">${esc(it.note)}</div>` : ''}
     </div>
     <div class="q-meta">
@@ -893,18 +1371,20 @@ function renderDrill() {
       <button class="btn" id="btnAgain">↺ もう一回</button>
       <button class="btn primary" id="btnOk">⚡ 言えた</button>
     </div>
-    <div class="hint" style="text-align:center;margin-top:12px">スペース＝答えを見る／→＝言えた／←＝もう一回</div>`;
+    <div class="hint" style="text-align:center;margin-top:12px">スペース＝答えを見る／→＝言えた／←＝もう一回${q ? '／H＝出だし' : ''}</div>`;
   $('#reveal') && ($('#reveal').onclick = () => { drill.shown = true; renderDrill(); });
-  $('#btnOk').onclick = () => { if (!drill.shown) { drill.shown = true; return renderDrill(); } markDone(it.id); drill.ok++; drill.i++; drill.shown = false; renderDrill(); renderStats(); };
-  $('#btnAgain').onclick = () => { drill.queue.push(it.id); drill.again++; drill.i++; drill.shown = false; renderDrill(); };
+  $('#hintBtn') && ($('#hintBtn').onclick = () => { drill.hint = true; renderDrill(); });
+  $('#btnOk').onclick = () => { if (!drill.shown) { drill.shown = true; return renderDrill(); } markDone(it.id); drill.ok++; drill.i++; drill.shown = false; drill.hint = false; renderDrill(); renderStats(); };
+  $('#btnAgain').onclick = () => { drill.queue.push(it.id); drill.again++; drill.i++; drill.shown = false; drill.hint = false; renderDrill(); };
   $('#drillQuit').onclick = () => { drill = null; renderDrill(); render(); };
 }
 document.addEventListener('keydown', e => {
   if (!drill || $('#viewDrill').classList.contains('hidden')) return;
-  if (editSheet.classList.contains('open') || uiSheet.classList.contains('open')) return;
+  if (anySheetOpen()) return;
   if (e.key === ' ') { e.preventDefault(); if (!drill.shown) { drill.shown = true; renderDrill(); } }
   if (e.key === 'ArrowRight') { e.preventDefault(); $('#btnOk')?.click(); }
   if (e.key === 'ArrowLeft') { e.preventDefault(); $('#btnAgain')?.click(); }
+  if (e.key === 'h' || e.key === 'H') { e.preventDefault(); $('#hintBtn')?.click(); }
 });
 
 /* ---------- tabs ---------- */
@@ -935,7 +1415,7 @@ $('#tabDrill').onclick = () => setTab('drill');
 })();
 
 /* ---------- boot ---------- */
-$('#sort').value = DB.settings.sort;
+paintDeck();
 render();
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
