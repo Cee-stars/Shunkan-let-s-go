@@ -1,5 +1,5 @@
 /* 瞬間英作文 - offline shell */
-const CACHE = 'shunkan-v2';
+const CACHE = 'shunkan-v3';
 const ASSETS = [
   './',
   './index.html',
