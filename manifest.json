@@ -1,0 +1,18 @@
+{
+  "name": "瞬間英作文",
+  "short_name": "瞬間英作文",
+  "description": "日本語を見て英語を言う瞬間英作文と、英文を見て疑問文を作る疑問文モード。主語=赤・動詞=青で色分けできるトレーナー。",
+  "lang": "ja",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#FBFBFD",
+  "theme_color": "#16181D",
+  "categories": ["education", "productivity"],
+  "icons": [
+    { "src": "./icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "./icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
